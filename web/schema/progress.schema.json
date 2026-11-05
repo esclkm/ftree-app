@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ftree-app.invalid/schema/progress.schema.json",
+  "title": "Состояние дерева и что нового — data/progress.json",
+  "description": "Цифры по родам из ftree.toml и лента правок по дням. Считает tools/scripts/site_data/progress.py: лента — сравнение снимков дерева по последнему коммиту каждого дня, только из того, что посетитель и так видит на сайте. Люди — по cr_id; имя берётся из index.json.",
+  "type": "object",
+  "properties": {
+    "schema": {"const": "progress/1"},
+    "total": {
+      "type": "object",
+      "properties": {
+        "people": {"type": "integer"},
+        "bios": {"type": "integer"},
+        "pics": {"type": "integer", "description": "Людей хотя бы с одним фото."},
+        "facts": {"type": "integer"}
+      },
+      "required": ["people", "bios", "pics", "facts"],
+      "additionalProperties": false
+    },
+    "branches": {"type": "array", "items": {"$ref": "#/$defs/Branch"}},
+    "days": {"type": "array", "items": {"$ref": "#/$defs/Day"}, "description": "Новые сверху."}
+  },
+  "required": ["schema", "total", "branches", "days"],
+  "additionalProperties": false,
+  "$defs": {
+    "Branch": {
+      "type": "object",
+      "properties": {
+        "key": {"type": "string", "description": "Имя рода, как в ftree.toml и в lineage карточек."},
+        "root": {"type": ["string", "null"], "description": "cr_id деда или бабушки, с которых род начинается."},
+        "people": {"type": "integer", "description": "Кровная родня (lineage)."},
+        "by_marriage": {"type": "integer", "description": "Супруги кровной родни (lineage_by_marriage), не кровные."},
+        "generations": {"type": "integer", "description": "На сколько поколений выше корня известны предки."},
+        "ancestors": {"type": "integer", "description": "Сколько предков корня известно (без него самого)."},
+        "deepest": {"type": "array", "items": {"type": "string"}, "description": "cr_id предков на самом дальнем поколении (до 4)."},
+        "oldest": {
+          "type": ["object", "null"],
+          "properties": {"id": {"type": "string"}, "year": {"type": "integer"}},
+          "required": ["id", "year"],
+          "additionalProperties": false,
+          "description": "Предок с самым ранним годом рождения."
+        },
+        "docs": {
+          "type": "object",
+          "description": "Рождения и смерти корня и его предков (смерть живых не считаем): чем подтверждены — правила coverage.py.",
+          "properties": {
+            "events": {"type": "integer"},
+            "record": {"type": "integer", "description": "Документом: запись о событии или другая бумага."},
+            "family": {"type": "integer", "description": "Только со слов семьи или по старому дереву."},
+            "none": {"type": "integer", "description": "Ничем или только выводом и чужим деревом."}
+          },
+          "required": ["events", "record", "family", "none"],
+          "additionalProperties": false
+        },
+        "bios": {"type": "integer"},
+        "pics": {"type": "integer"},
+        "week": {"type": ["integer", "null"], "description": "Сколько кровной родни прибавилось за 7 дней; null — истории нет."},
+        "growth": {
+          "type": "array",
+          "items": {"type": "object", "properties": {"date": {"type": "string", "format": "date"}, "people": {"type": "integer"}},
+                    "required": ["date", "people"], "additionalProperties": false},
+          "description": "Кровной родни по дням с правками."
+        }
+      },
+      "required": ["key", "root", "people", "by_marriage", "generations", "ancestors", "deepest", "oldest", "docs", "bios", "pics", "week", "growth"],
+      "additionalProperties": false
+    },
+    "Day": {
+      "type": "object",
+      "properties": {
+        "date": {"type": "string", "format": "date"},
+        "people": {"type": "integer", "description": "Людей в дереве в конце дня."},
+        "removed": {"type": "integer", "description": "Карточек стало меньше (слияния) — только число."},
+        "items": {"type": "array", "items": {"$ref": "#/$defs/Change"}}
+      },
+      "required": ["date", "people", "removed", "items"],
+      "additionalProperties": false
+    },
+    "Change": {
+      "type": "object",
+      "properties": {
+        "id": {"type": "string"},
+        "new": {"const": true, "description": "Новый человек в дереве."},
+        "life": {"type": "array", "items": {"type": "string"}, "minItems": 2, "maxItems": 2, "description": "Годы жизни: было, стало."},
+        "facts": {"type": "integer", "description": "Сколько фактов прибавилось."},
+        "bio": {"enum": ["new", "edit"]},
+        "pics": {"type": "integer", "description": "Сколько фото прибавилось."},
+        "parents": {"type": "array", "items": {"type": "string"}, "description": "Привязаны родители (cr_id)."},
+        "spouses": {"type": "array", "items": {"type": "string"}, "description": "Привязаны супруги (cr_id)."}
+      },
+      "required": ["id"],
+      "additionalProperties": false
+    }
+  }
+}

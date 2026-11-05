@@ -1,0 +1,215 @@
+// Стили того, чего нет на нынешних страницах: факты списком, пометка «в работе», простые списки.
+.status { color: var(--muted); }
+ul.plain { list-style: none; padding: 0; margin: 0; li { padding: 3px 0; } }
+ul.columns { columns: 18rem; li { break-inside: avoid; } }
+td.list { > span + span::before { content: ', '; } }
+// «Сверка» (OtherPages → ReviewPage): две карточки рядом, команды решений — свёрнуты
+.review-pair { h3 { margin: 0 0 8px; } }
+.review-sides { display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  @media (max-width: 600px) { grid-template-columns: 1fr; } }
+.review-side { border: 1px dashed var(--outline); border-radius: 10px; padding: 8px 12px; .kv { margin-top: 6px; } }
+.review-cmd { margin-top: 8px; font-size: 13px; code { overflow-wrap: anywhere; } }
+// «Возможно, связан» (PersonPage → Possible): подозрение, не связь — пунктиром, как недоказанное
+.maybe {
+  margin-top: 12px; padding: 8px 12px; border: 1px dashed var(--outline); border-radius: 10px;
+  h3 { margin: 0 0 2px; font-size: 15px; }
+  .note { margin: 0 0 6px; font-size: 13px; color: var(--muted); }
+  .maybe-what { color: var(--muted); }
+  .reasoning { font-size: 13px; color: var(--muted); font-style: italic; }
+}
+.facts {
+  list-style: none; padding: 0; margin: 0;
+  .fact { display: grid; grid-template-columns: 9.5rem 1fr; gap: 12px; padding: 10px 0; border-top: 1px solid var(--surface-2); }
+  .fact:first-child { border-top: 0; }
+  .date { color: var(--muted); font-size: 14px; }
+  .src-line { margin-top: 4px; font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; }
+  .srcs { flex: 0 1 auto; }
+  .conf.high { background: var(--primary-container); border-color: transparent; color: var(--on-primary-container); }
+  .conf.low { font-style: italic; }
+  .reasoning { font-size: 13px; color: var(--muted); font-style: italic; }
+  @media (max-width: 600px) { .fact { grid-template-columns: 1fr; gap: 2px; } }
+}
+.tl-extra { display: block; font-size: 13px; color: var(--muted); > span + span::before { content: ' · '; } }
+.bio-tabs button.on { font-weight: 700; }
+.person-map { height: 320px; border-radius: 12px; margin: 0 0 12px; z-index: 0; }
+.prose code { overflow-wrap: anywhere; }  // длинные пути к файлам в тексте не раздвигают страницу на телефоне
+.map-page { position: relative; }
+// «Найти место» поверх карты — справа сверху (слева кнопки приближения, снизу — панель места)
+.map-search {
+  position: absolute; z-index: 600; top: 12px; right: 12px; width: min(360px, calc(100% - 70px));
+  .search { margin: 0; padding: 0 16px; }
+  .map-found { list-style: none; margin: 4px 0 0; padding: 4px; max-height: 50vh; overflow: auto; background: var(--card); border-radius: 12px; box-shadow: var(--shadow-2);
+    > li.life { padding: 8px 10px; }
+    li.cur button { background: var(--surface-1); }
+    button { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; border: 0; background: none; padding: 8px 10px; border-radius: 8px;
+      cursor: pointer; font: inherit; color: inherit; .ic { width: 18px; height: 18px; flex: none; color: var(--muted); } } }
+}
+// крестик очистки в поле поиска (Хроника)
+.search .icon-btn { font-size: 20px; color: var(--muted); }
+.search input[type=search]::-webkit-search-cancel-button { display: none; }
+.map-panel {
+  position: absolute; z-index: 500; left: 12px; bottom: 12px; width: min(420px, calc(100% - 24px)); max-height: calc(100% - 24px);
+  overflow: auto; margin: 0;
+  .close { position: absolute; top: 6px; right: 6px; font-size: 22px; }
+  h2 { padding-right: 32px; }
+}
+
+// ---------- линии жизни на одной шкале (pages/Lifelines.tsx) ----------
+.ll-pick {
+  .ll-chip { gap: 6px; border-width: 2px; i { width: 10px; height: 10px; border-radius: 50%; } button { border: 0; background: none; cursor: pointer; font-size: 15px; color: var(--muted); padding: 0 2px; } }
+  .ll-search { position: relative; max-width: 420px; input { width: 100%; scroll-margin-top: 72px; } }  // отступ — под узкой шапкой телефона
+  .ll-chosen { margin-top: 10px; }
+  .ll-found li.cur button { background: var(--surface-1); }
+  .ll-found { position: absolute; z-index: 20; left: 0; right: 0; list-style: none; margin: 4px 0 0; padding: 4px; background: var(--card); border-radius: 12px; box-shadow: var(--shadow-2);
+    button { width: 100%; text-align: left; border: 0; background: none; padding: 8px 10px; border-radius: 8px; cursor: pointer; font: inherit; &:hover { background: var(--surface-1); } } }
+  .ll-kin { margin-top: 10px; font-size: 14px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+}
+.ll-card { padding-left: 0; padding-right: 0; }
+.ll-scroll { overflow-x: auto; }
+.ll-grid { position: relative; }
+.ll-axis-row { display: flex; }
+.ll-corner { position: sticky; left: 0; z-index: 5; flex: none; height: 34px; background: var(--card); }  // над подписями лет при прокрутке
+.ll-axis { position: relative; flex: none; height: 34px; font-size: 12px; color: var(--muted); }
+.ll-tick { position: absolute; top: 16px; transform: translateX(-50%); }
+.ll-war-label { position: absolute; top: 0; text-align: center; font-size: 11px; color: var(--like); white-space: nowrap; overflow: visible; }
+.ll-lanes { position: relative; }
+.ll-overlay { position: absolute; top: 0; bottom: 0; pointer-events: none; z-index: 1; }
+.ll-line { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--surface-2); }
+.ll-war { position: absolute; top: 0; bottom: 0; background: rgba(155, 75, 59, .07); }
+.ll-cursor { position: absolute; top: -34px; bottom: 0; border-left: 2px solid var(--path); b { position: absolute; top: 0; left: 4px; font-size: 12px; color: var(--path); background: var(--card); padding: 0 3px; border-radius: 4px; } }
+.ll-row { display: flex; align-items: center; height: 58px; border-top: 1px solid var(--surface-2); }
+.ll-name { position: sticky; left: 0; z-index: 5;  // выше точек и полос: при прокрутке вбок они уходят под имена
+  flex: none; height: 100%; display: flex; align-items: center; padding: 0 10px 0 12px; background: var(--card);
+  border-left: 5px solid; font-size: 14px; line-height: 1.25; box-sizing: border-box; }
+.ll-lane { position: relative; z-index: 0; isolation: isolate; flex: none; height: 100%; cursor: crosshair; }  // свой слой: точки не выше имён
+.ll-state { position: absolute; top: 34px; height: 9px; border-radius: 3px; }
+.ll-bar { position: absolute; top: 20px; height: 10px; border-radius: 5px; opacity: .9;
+  &.open { mask-image: linear-gradient(to right, #000 85%, transparent); } }
+.ll-dot { position: absolute; top: 17px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: var(--card); border: 3px solid; box-sizing: border-box; z-index: 2; cursor: help; }
+// «Память» — после смерти: тонкий пунктир от конца полосы и пустые кружки поменьше
+.ll-after { position: absolute; top: 24px; height: 0; border-top: 2px dashed; opacity: .6; }
+.ll-dot.memory { width: 10px; height: 10px; margin-left: -5px; top: 20px; border-width: 2px; border-style: dashed; }
+.ll-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 12px 16px 0; font-size: 13px; color: var(--muted);
+  span { display: inline-flex; align-items: center; gap: 6px; } i { width: 18px; height: 9px; border-radius: 3px; } }
+// «По годам»: в колонке только год — она узкая; имя — инициалами цветом человека (PersonLink short)
+.timeline.ll-list .date { flex-basis: 3em; }
+.plink .initials { font-weight: 700; letter-spacing: .02em; }
+.ll-list .ll-item { display: flex; gap: 8px; align-items: baseline; padding: 2px 0; i { flex: none; width: 10px; height: 10px; border-radius: 50%; transform: translateY(1px); } }
+.hero-btns { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+@media (max-width: 700px) { .hero-btns { flex-direction: row; flex-wrap: wrap; } }
+.ll-input { width: 100%; box-sizing: border-box; padding: 10px 14px; border: 1px solid var(--outline); border-radius: 12px; font: inherit; background: var(--card); }
+main:has(.ll-card) { max-width: min(1500px, 100%); }  // шкале лет — пошире остальных страниц
+@media (max-width: 700px) { .ll-name { font-size: 12px; padding: 0 6px 0 8px; } .ll-row { height: 64px; } }
+
+// шапка человека: кружок | имя и годы (над ним) и «кем приходится» (под ним) | кнопки. На телефоне — кружок рядом с
+// именем, «кем приходится» и кнопки — на всю ширину, кнопки в одну строку
+.person-hero {
+  display: grid; grid-template-columns: auto 1fr auto; grid-template-areas: "av head btns" "av kin btns"; gap: 0 20px; align-items: center;
+  > .avatar { grid-area: av; }
+  > .hero-text { grid-area: head; align-self: end; h1 { margin: 0; } .life.big { margin: 4px 0 6px; } }
+  > #kin { grid-area: kin; align-self: start; margin: 0; }
+  > .hero-btns { grid-area: btns; }
+}
+.person-hero .short { display: none; }  // короткие подписи кнопок — только на телефоне (ниже)
+@media (max-width: 700px) {
+  .person-hero {
+    grid-template-columns: 56px 1fr; grid-template-areas: "av head" "kin kin" "btns btns"; gap: 8px 12px;
+    > .avatar { width: 56px; height: 56px; &.ph { font-size: 22px; .ic { width: 32px; height: 32px; } } }
+    > .hero-text { align-self: center; h1 { font-size: 22px; line-height: 1.2; } .life.big { margin: 2px 0 0; font-size: 15px; } }
+    > #kin { font-size: 14px; .kin-chain { font-size: 13px; line-height: 1.55; } }
+    > .hero-btns { flex-direction: row; flex-wrap: nowrap; gap: 8px;
+      .btn { flex: 1 1 0; justify-content: center; padding: 8px 10px; font-size: 14px; min-width: 0; white-space: nowrap; } }
+    .long { display: none; } .short { display: inline; }
+  }
+}
+.life-strip { margin: 6px 0 14px; }
+// поле поиска внутри плашки .search — как #q на нынешних страницах (_components.scss): без рамки, на всю ширину
+.search input { flex: 1; min-width: 0; border: 0; outline: 0; font: 16px var(--f-body); padding: 12px 0; background: none; color: inherit; }
+// выбор лет на шкале: под мышью — блок до следующего события, выбранный промежуток — ярче; в списке — тот же блок
+.ll-hot-band { position: absolute; top: 0; bottom: 0; background: color-mix(in srgb, var(--path) 10%, transparent); }
+.ll-pick-band { position: absolute; top: -34px; bottom: 0; background: color-mix(in srgb, var(--path) 16%, transparent);
+  border-left: 2px solid var(--path); border-right: 2px solid var(--path); }
+.ll-lanes { user-select: none; }
+.ll-lanes.picked .ll-dot.dim { opacity: .3; }
+.ll-hint { margin: 10px 16px 0; font-size: 13px; }
+.ll-list > li { transition: background .15s; border-radius: 8px; }
+.ll-list > li.hot { background: color-mix(in srgb, var(--path) 9%, transparent); }
+.ll-range { margin-left: 10px; gap: 4px; font-size: 14px; font-weight: 400; vertical-align: middle;
+  button { border: 0; background: none; cursor: pointer; font-size: 16px; color: var(--muted); padding: 0 2px; } }
+// телефон, поиск в «Линиях жизни»: пока поле в фокусе, внизу — запас, чтобы страницу можно было прокрутить и поле встало
+// под шапку (Lifelines.tsx, toTop); список — не выше трети экрана, прокручивается сам: остаётся над клавиатурой
+@media (max-width: 700px) {
+  main:has(.ll-input:focus) { padding-bottom: 75vh; }
+  .ll-pick .ll-found { max-height: 34vh; overflow-y: auto; overscroll-behavior: contain; }
+}
+
+// ---------- «Хроника» (Gallery.tsx): вкладки Места / Дома / События; дома (Houses.tsx) ----------
+.gal-tabs { margin: 0 0 12px; .chip { text-decoration: none; }
+  .chip.active { background: var(--primary-container); color: var(--on-primary-container); border-color: transparent; } }
+.houses-list {
+  .note { margin-top: 0; }
+  h3 { margin: 14px 0 4px; font-size: 15px; }
+  .house-row { text-decoration: none; display: grid; grid-template-columns: 20px 1fr; column-gap: 8px; width: 100%; text-align: left; border: 0; background: none;
+    padding: 6px 8px; border-radius: 8px; cursor: pointer; font: inherit; color: var(--on-surface);
+    &:hover { background: var(--surface-1); }
+    .ic { width: 18px; height: 18px; color: var(--primary); margin-top: 2px; }
+    .life { grid-column: 2; font-size: 13px; } }
+}
+.house-chips { margin-top: 8px; }
+.house-people {
+  .hp-axis, .hp-track { position: relative; margin-left: 0; }
+  .hp-axis { height: 18px; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--outline);
+    span { position: absolute; transform: translateX(-50%); } span:first-child { transform: none; } }
+  .hp-rows li { padding: 6px 0; border-bottom: 1px solid var(--surface-1); }
+  .hp-track { height: 8px; margin-top: 4px; background: var(--surface-1); border-radius: 4px;
+    i { position: absolute; top: 0; height: 8px; border-radius: 4px; background: var(--primary); }
+    i.dot { width: 8px !important; transform: translateX(-2px); }
+    i.open { background: linear-gradient(to right, var(--primary) 0 8px, color-mix(in srgb, var(--primary) 35%, transparent) 30%, transparent); }
+    i.before { background: linear-gradient(to left, var(--primary) 0 8px, color-mix(in srgb, var(--primary) 35%, transparent) 30%, transparent); }
+    i.window { background: color-mix(in srgb, var(--primary) 30%, transparent); } }
+}
+
+// «Настройки»: узкая колонка, подписи слева, выбор справа
+.settings { max-width: 640px; margin: 0 auto;
+  .card h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font-size: 18px; }
+  .set-me { margin: 10px 0; }
+  .set-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 8px 0; }
+  .set-check { display: flex; align-items: center; gap: 8px; margin: 12px 0 4px; cursor: pointer; input { width: 18px; height: 18px; margin: 0; accent-color: var(--primary); } }
+  select { font: 14px var(--f-body); padding: 6px 10px; border: 1px solid var(--outline); border-radius: 8px; background: var(--card); color: var(--on-surface); }
+  .psearch { max-width: 420px; }
+}
+
+// «Состояние дерева»: карточка на род — число, линия роста, таблица, полоса «чем подтверждено»
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 0 16px; }
+.card.stat {
+  h2 { margin: 0 0 4px; font-size: 20px; }
+  h3 { margin: 14px 0 6px; font-size: 14px; color: var(--muted); font-weight: 500; }
+  .big-num { font: 600 32px var(--f-display); line-height: 1.1; .life { font: 15px var(--f-body); } }
+  .up { color: var(--ours); font-weight: 600; }
+  .spark { display: block; width: 100%; height: 36px; margin: 8px 0 4px;
+    polyline { fill: none; stroke: var(--primary); stroke-width: 2; vector-effect: non-scaling-stroke; } }
+  table.kv { margin-top: 6px; }
+}
+.docs {
+  .bar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--surface-2); }
+  .rec, i.rec { background: var(--primary); }
+  .fam, i.fam { background: var(--ours); }
+  .none, i.none { background: var(--outline); }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; font-size: 13px;
+    i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; } }
+}
+
+// «Что нового»: день — раскрывающаяся карточка, внутри роды и строки людей
+.card.day {
+  > summary { cursor: pointer; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; list-style: none;
+    &::-webkit-details-marker { display: none; }
+    h2 { margin: 0; font-size: 19px; &::first-letter { text-transform: uppercase; } } }
+  .day-branch h3 { display: flex; align-items: center; gap: 8px; margin: 16px 0 4px; font-size: 15px; .count { margin-left: 0; } }
+  .more > summary { cursor: pointer; color: var(--primary); font-size: 14px; margin: 4px 0; }
+}
+.changes { list-style: none; padding: 0; margin: 0;
+  li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 6px 0; border-bottom: 1px solid var(--surface-1); }
+  .chip { white-space: normal; }
+  .chip.ours { background: var(--ours-bg); color: var(--ours); border-color: transparent; }
+  .rel { font-size: 13px; color: var(--muted); .plink + .plink::before { content: ", "; } }
+}

@@ -1,0 +1,20 @@
+#!/bin/sh
+# После коммита: то, что есть в описи медиа, но ещё не в хранилище, — отправить в фоне (media.py push). Коммит не ждёт.
+# Только если владелец дерева это включил: ftree.toml, [storage] push_after_commit = true и задано хранилище
+# ([storage.media] / [storage.private]); иначе медиа никуда не уходит. Не ушло (нет сети) — видно в сводке при старте
+# сессии; повторит следующий коммит. Лог и замок — /tmp/ftree_<имя дерева>_media.*
+# Хуки лежат в приложении (tools/githooks), ставятся в репозиторий дерева (rodo hook install); команды — из приложения.
+APP=$(cd "$(dirname "$0")/../.." && pwd)
+RODO="$APP/tools/rodo"
+cd "$(git rev-parse --show-toplevel)" || exit 0
+[ -n "$SKIP_MEDIA" ] && exit 0
+grep -qv '"pushed"' media/manifest.jsonl 2>/dev/null || exit 0     # всё уже в хранилище
+setting() { "$APP/tools/py" "$APP/tools/scripts/paths.py" "$1" 2>/dev/null; }
+[ -n "$(setting MEDIA_PUSH_AFTER_COMMIT)" ] || exit 0               # не включено в настройках дерева
+RUN=$(setting RUN_PREFIX); [ -n "$RUN" ] || exit 0
+LOCK="${RUN}media.lock"; LOG="${RUN}media.log"                      # отправка уже идёт — новое уйдёт со следующим коммитом
+find "$LOCK" -maxdepth 0 -mmin +180 -exec rm -rf {} \; 2>/dev/null  # замок старше 3 ч — отправку прервали, снять
+mkdir "$LOCK" 2>/dev/null || exit 0
+nohup sh -c "'$RODO' media push; rm -rf '$LOCK'" >"$LOG" 2>&1 &
+echo "☁️  Медиа уходит в облако в фоне — лог: $LOG"
+exit 0

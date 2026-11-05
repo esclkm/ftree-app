@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ftree-app.invalid/schema/site.schema.json",
+  "title": "Настройки сборки — site.json рядом с папкой data/ выгрузки",
+  "description": "Что сборщику сайта нужно знать сверх data/: какие файлы отдавать только по паролю, когда и из каких стран вход открыт, куда выкладывать (цели из ftree.toml, [[site.target]]; нет целей — сайт только собирается). Пишет выгрузка (rodo site export) из карточек и ftree.toml [site]; сборщик (web/scripts/site.mjs) карточек не читает. На сайт этот файл не копируется: список закрытых файлов — только в проверке входа на сервере.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "site/1"
+    },
+    "built": {
+      "description": "Когда сделана выгрузка (UTC).",
+      "type": "string"
+    },
+    "private_files": {
+      "description": "Адреса от корня сайта (/files/…, /media/…), которые без пароля не отдаются никогда.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^/"
+      }
+    },
+    "owner_login": {
+      "description": "Имя владельца сайта для пароля SITE_PASSWORD: [site] owner_login в ftree.toml; пусто — только USER_<ИМЯ>.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]*$"
+    },
+    "realm": {
+      "description": "Имя в окне входа (Basic realm): [site] realm в ftree.toml; пусто — «Family tree».",
+      "type": "string",
+      "pattern": "^[\\x20-\\x7E]*$"
+    },
+    "open_until": {
+      "description": "До какого дня включительно вход без пароля из open_countries; '' — закрыто.",
+      "type": "string",
+      "pattern": "^(\\d{4}-\\d{2}-\\d{2})?$"
+    },
+    "open_countries": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Z]{2}$"
+      }
+    },
+    "deploy": {
+      "description": "Куда выкладывать: цели из ftree.toml дерева ([[site.target]]). Пусто — никуда.",
+      "type": "object",
+      "properties": {
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "enum": [
+                  "cloudflare-pages",
+                  "folder",
+                  "netlify",
+                  "cloudflare-worker"
+                ]
+              },
+              "role": {
+                "description": "main — сам сайт (rodo site publish); mirror — пересылка на основной (rodo site mirror).",
+                "enum": [
+                  "main",
+                  "mirror"
+                ]
+              },
+              "name": {
+                "description": "Имя на хостинге: проект Pages, сайт Netlify, воркер; у folder — путь к папке.",
+                "type": "string",
+                "minLength": 1
+              },
+              "url": {
+                "type": "string",
+                "pattern": "^https://"
+              },
+              "manual": {
+                "description": "Выкладывать только по имени (rodo site publish|mirror <имя>).",
+                "const": true
+              }
+            },
+            "required": [
+              "kind",
+              "role",
+              "name"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "targets"
+      ],
+      "additionalProperties": false
+    },
+    "counts": {
+      "description": "Сколько чего в выгрузке — для строки итога сборки.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "tree": {
+      "description": "Имя дерева ([tree] name) — для файлов этого дерева на Mac (секрет зеркала ~/.config/ftree/<имя>/proxy_key).",
+      "type": "string",
+      "pattern": "^[\\w-]+$"
+    }
+  },
+  "required": [
+    "schema",
+    "private_files",
+    "open_until",
+    "open_countries",
+    "deploy"
+  ],
+  "additionalProperties": false
+}

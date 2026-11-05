@@ -1,0 +1,48 @@
+# Что входит в приложение ftree-app — единственный список. Читают: scan_personal.py app (сторож личного),
+# leaks.py (gitleaks). Строки «tree» — что осталось в данных дерева при разделе (05.11.2026): там же, по тем же путям. `rodo app-files` — все файлы приложения; `rodo app-files tree` — что остаётся
+# в данных.
+#
+#   app  <путь>   входит (папка — со всем, что в git); всё прочее в приложение не идёт
+#   skip <путь>   внутри «app», но не код: кэш, веса моделей, сборки — в git их и так нет или они не нужны
+#   tree <путь>   внутри «app», но целиком о людях нашего дерева: остаётся в данных; рядом — почему
+#
+# Путь — от корня (папка с ftree.toml); папка — с «/» на конце.
+
+app  tools/
+app  web/
+app  .claude/skills/
+app  .claude/launch.json
+app  .claude-plugin/
+app  .github/workflows/
+app  Brewfile
+app  pyproject.toml
+app  uv.lock
+app  README.md
+app  LICENSE
+app  .gitignore
+app  .gitattributes
+
+skip tools/ai_weights/
+skip tools/.cache/
+skip tools/tree-viewer/
+skip web/node_modules/
+skip web/dist/
+skip web/dist-app/
+skip web/site_assets/netlify/public/
+
+# Навыки целиком об одном дереве — остаются в его данных
+tree .claude/skills/audio-argentina/      # расшифровка разговоров с одной ветвью родни: её речь, имена
+tree .claude/skills/book-chapter/         # главы книг одного дерева
+
+# Книги одного дерева (update_all.py --books): главы, порядок и люди зашиты в сами скрипты — остаются в данных
+tree tools/scripts/build_book.py          # сборка книги по кровной родне
+tree tools/scripts/book_to_pdf.py         # КНИГА_*.md → HTML/PDF
+tree tools/scripts/rod_to_pdf.py          # родословная роспись → PDF
+tree tools/scripts/book_mk_figures.py     # схемы для книги о двух родах
+tree tools/scripts/book_mk_pdf.py         # та же книга → PDF
+tree tools/scripts/argentina_map.py       # карта пути одной ветви для её книги
+tree tools/scripts/papa_doc_pdf.py        # документ для одного родственника
+tree tools/scripts/relatives_classify.py  # кровная родня по старой выгрузке Gramps (для книги)
+
+# Разовый перенос одного дерева из Gramps в Obsidian — повторять запрещено (CLAUDE.md того дерева)
+tree tools/obsidian_import/

@@ -1,0 +1,53 @@
+@use 'mixins' as *;
+@use 'tokens' as *;
+
+// верхняя панель
+.appbar {
+  position: sticky; top: 0; z-index: 1000; display: flex; align-items: center; gap: 8px 16px; flex-wrap: wrap;
+  padding: 8px 16px; background: var(--surface-1); box-shadow: 0 1px 0 var(--outline);
+  nav { display: flex; gap: 4px; flex-wrap: wrap; }
+  nav a {
+    display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 20px; color: var(--muted); font-weight: 500; font-size: 14px;
+    &:hover { background: var(--surface-2); text-decoration: none; }
+    &.on { background: var(--secondary-container); color: var(--on-secondary-container); }
+  }
+}
+.brand {
+  display: flex; align-items: center; gap: 8px; font: 600 20px/1 $serif; color: var(--on-surface); margin-right: 8px;
+  .ic { color: var(--primary); width: 28px; height: 28px; }
+  &:hover { text-decoration: none; }
+}
+.actions { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+// шестерёнка «Настройки» — рядом с языком, той же высоты
+.setlink { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: 1px solid var(--outline); border-radius: 10px;
+  color: var(--on-surface); background: var(--card); svg { width: 18px; height: 18px; } &.on { color: var(--primary); border-color: var(--primary); } }
+#lang { font: 500 14px var(--f-body); padding: 7px 10px; border: 1px solid var(--outline); border-radius: 10px; background: var(--card); color: var(--on-surface); cursor: pointer; }
+.icon-btn {
+  display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border: 0; border-radius: 50%; background: none; color: var(--muted); cursor: pointer;
+  &:hover { background: var(--surface-2); }
+  .ic { width: 22px; height: 22px; }
+}
+
+// телефон: первая строка — название и язык; вторая — шесть разделов на всю ширину, значок и подпись под ним
+@include phone {
+  .appbar {
+    display: grid; grid-template-columns: 1fr auto; grid-template-areas: "brand actions" "nav nav"; gap: 2px 8px; padding: 6px 8px 4px;
+    // колонки — по длине подписи («Линии жизни» шире «Фото»), всё — в одну строку
+    nav { grid-area: nav; display: grid; grid-template-columns: repeat(7, minmax(0, auto)); justify-content: space-between; gap: 2px; }
+    nav a { flex-direction: column; justify-content: flex-start; gap: 2px; padding: 5px 6px 4px; border-radius: 12px; min-width: 0; }
+    nav a span { font-size: 10px; line-height: 1.15; text-align: center; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+    nav a .ic { width: 22px; height: 22px; }
+    transition: transform .22s ease, box-shadow .22s;
+    // прокрутили вниз: видно только меню (Layout.tsx, useCompactBar) — значки и подписи мельче, полоска тоньше
+    &.compact { box-shadow: 0 2px 8px rgba(0, 0, 0, .12);
+      .brand, .actions { opacity: 0; pointer-events: none; }
+      // мельче — через scale: высота шапки в раскладке та же, иначе страница сдвигается и прокрутка скачет
+      nav a { transform: scale(.9); } }
+    nav a { transition: transform .22s; }
+    .brand, .actions { transition: opacity .18s; }
+  }
+  .brand { grid-area: brand; font-size: 18px; .ic { width: 24px; height: 24px; } }
+  #lang { padding: 4px 6px; font-size: 13px; }
+  .setlink { width: 28px; height: 28px; }
+  .actions { grid-area: actions; margin-left: 0; }
+}

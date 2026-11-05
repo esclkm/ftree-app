@@ -1,0 +1,72 @@
+#!/bin/sh
+# Перед каждым push: те же проверки, что на GitHub (.github/workflows/checks.yml), — на чистой копии того коммита,
+# который уходит, а не на рабочей папке с незакоммиченным. Красное — push не уходит; GitHub не краснеет «через раз».
+# Если уходит master, всё зелёное и в ftree.toml дерева включено ([site] publish_after_push = true и есть [[site.target]]) —
+# пересобрать сайт для родни и выложить (в фоне; лог — /tmp/ftree_<имя дерева>_publish.log).
+# Обойти в крайнем случае: SKIP_CHECKS=1 git push … (проверки) · SKIP_PUBLISH=1 git push … (выкладка) · git push --no-verify
+# Хуки лежат в приложении (tools/githooks), ставятся в репозиторий дерева (rodo hook install); команды — из приложения.
+APP=$(cd "$(dirname "$0")/../.." && pwd)
+RODO="$APP/tools/rodo"
+cd "$(git rev-parse --show-toplevel)" || exit 0
+REPO=$(pwd)
+command -v npm >/dev/null 2>&1 || { [ -s "$HOME/.nvm/nvm.sh" ] && . "$HOME/.nvm/nvm.sh"; }   # git зовёт хук без nvm
+ZERO=0000000000000000000000000000000000000000
+publish=""
+shas=""
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ "$local_sha" = "$ZERO" ] && continue                  # удаление ветки — проверять нечего
+  shas="$shas $local_sha"
+  [ "$remote_ref" = "refs/heads/master" ] && publish=1
+done
+[ -z "$shas" ] && exit 0
+
+if [ -z "$SKIP_CHECKS" ]; then
+  for sha in $(printf '%s\n' $shas | sort -u); do
+    wt=$(mktemp -d "${TMPDIR:-/tmp}/ftree-prepush.XXXXXX") || exit 1
+    git worktree add -q --detach "$wt/tree" "$sha" || { rm -rf "$wt"; exit 1; }
+    # приложение внутри данных — проверять код этого коммита (копию); приложение отдельно — код из его папки
+    if [ "$APP" = "$REPO" ]; then
+      A="$wt/tree"
+      ln -s "$REPO/.venv" "$wt/tree/.venv"                 # те же библиотеки, что uv.lock; ставить заново — долго
+      ln -s "$REPO/web/node_modules" "$wt/tree/web/node_modules"
+    else
+      A="$APP"
+    fi
+    # снимки дерева по дням для ленты «Что нового» — по одному на коммит, не меняются; без них 28 дней считались заново (2 мин)
+    mkdir -p "$REPO/tools/.cache/progress" "$wt/tree/tools/.cache"
+    ln -s "$REPO/tools/.cache/progress" "$wt/tree/tools/.cache/progress"
+    short=$(git rev-parse --short "$sha")
+    echo "🔎 Проверки перед push ($short) — как на GitHub, на чистой копии коммита…"
+    # Порядок как на GitHub: сайт — без фото, потом проверки — с пустышками фото (CI=1, media.py stub).
+    # FTREE_ROOT — чистая копия: пустышки лягут туда, а не в облако; MEDIA_ROOT сбросить.
+    # Сборка приложения сайта (npm run build) — проверка кода; когда приложение отдельно, её делает его репозиторий.
+    ( cd "$wt/tree" && unset MEDIA_ROOT GITHUB_ACTIONS && export FTREE_ROOT="$wt/tree" \
+      && "$A/tools/rodo" site export --data >"$wt/site.log" 2>&1 \
+      && (cd "$A/web" && node scripts/check-data.mjs "$("$A/tools/py" "$A/tools/scripts/paths.py" SITE_EXPORT)/data" >>"$wt/site.log" 2>&1 \
+          && { [ "$A" != "$wt/tree" ] || npm run build >>"$wt/site.log" 2>&1; }) \
+      && CI=1 sh "$A/tools/ci.sh" >"$wt/checks.log" 2>&1 )
+    code=$?
+    if [ $code -ne 0 ]; then
+      echo "✋ Push остановлен: проверки ($short) не прошли."
+      if [ -s "$wt/checks.log" ] && grep -q "Не прошло:" "$wt/checks.log"; then
+        sed -n '/^Не прошло:/,$p' "$wt/checks.log"
+        echo "   Подробно — rodo check (или лог: $wt/checks.log)"
+      else
+        echo "   Сайт (web/) не собрался — последние строки:"; tail -25 "$wt/site.log" | sed 's/^/   /'
+        echo "   Подробно — cd web && npm run build (или лог: $wt/site.log)"
+      fi
+      git worktree remove --force "$wt/tree"
+      exit 1
+    fi
+    git worktree remove --force "$wt/tree" && rm -rf "$wt"
+    echo "✅ Проверки ($short) прошли."
+  done
+fi
+
+if [ -n "$publish" ] && [ -z "$SKIP_PUBLISH" ] \
+   && [ -n "$("$APP/tools/py" "$APP/tools/scripts/paths.py" SITE_PUBLISH_AFTER_PUSH 2>/dev/null)" ]; then
+  LOG="$("$APP/tools/py" "$APP/tools/scripts/paths.py" RUN_PREFIX)publish.log"
+  nohup "$RODO" site all >"$LOG" 2>&1 &
+  echo "🌐 Сайт пересобирается и выкладывается в фоне — лог: $LOG"
+fi
+exit 0

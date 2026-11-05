@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Эталон метрик</title>
+<style>
+  :root { --bg:#f6f4ef; --panel:#fff; --ink:#222; --muted:#777; --line:#ddd; --accent:#2b6cb0; --ok:#2f855a; --warn:#b7791f; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.4 -apple-system, system-ui, sans-serif; color:var(--ink); background:var(--bg);
+         display:grid; grid-template-columns: 220px 1fr 440px; height:100vh; overflow:hidden; }
+  nav { overflow:auto; border-right:1px solid var(--line); background:var(--panel); }
+  nav h1 { font-size:15px; margin:12px; }
+  nav .progress { margin:0 12px 8px; color:var(--muted); }
+  nav button { display:block; width:100%; text-align:left; border:0; border-top:1px solid #eee; background:none;
+               padding:6px 12px; cursor:pointer; font:inherit; }
+  nav button.active { background:#e8f0fb; }
+  nav small { color:var(--muted); display:block; }
+  #scan { position:relative; overflow:hidden; background:#333; cursor:grab; }
+  #scan img { position:absolute; transform-origin:0 0; user-select:none; -webkit-user-drag:none; }
+  #zoombar { position:absolute; top:8px; left:8px; z-index:2; display:flex; gap:4px; }
+  #zoombar button { font:inherit; padding:2px 10px; }
+  aside { overflow:auto; background:var(--panel); border-left:1px solid var(--line); padding:12px; }
+  .meta { color:var(--muted); margin-bottom:8px; }
+  .hint { background:#fff8e6; border:1px solid #f0d9a0; padding:6px 8px; border-radius:4px; margin-bottom:10px; font-size:13px; }
+  fieldset { border:1px solid var(--line); border-radius:6px; margin:0 0 10px; padding:8px; }
+  legend { font-weight:600; padding:0 4px; }
+  label { display:block; font-size:12px; color:var(--muted); margin-top:4px; }
+  textarea, input[type=text] { width:100%; font:inherit; padding:3px 5px; border:1px solid #ccc; border-radius:3px; resize:vertical; }
+  textarea { min-height:28px; }
+  .rec-tools { display:flex; justify-content:space-between; align-items:center; }
+  .rec-tools button { font-size:12px; }
+  .bar { position:sticky; bottom:-12px; background:var(--panel); padding:10px 0; border-top:1px solid var(--line);
+         display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .bar button.save { background:var(--ok); color:#fff; border:0; padding:6px 14px; border-radius:4px; font:inherit; cursor:pointer; }
+  #msg { color:var(--ok); }
+  .state-checked { color:var(--ok); } .state-draft { color:var(--warn); }
+</style>
+</head>
+<body>
+<nav>
+  <h1>Эталон метрик</h1>
+  <div class="progress" id="progress"></div>
+  <div id="list"></div>
+</nav>
+<div id="scan">
+  <div id="zoombar"><button id="zin">+</button><button id="zout">−</button><button id="zfit">весь</button></div>
+  <img id="img" alt="скан">
+</div>
+<aside id="form"></aside>
+
+<script>
+let pages = [], current = null, data = null, started = 0;
+let zoom = 1, ox = 0, oy = 0;
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+const MARK = { checked: "✅", note: "💬", draft: "✏️", empty: "·" };
+
+async function loadList() {
+  pages = await (await fetch("/api/pages")).json();
+  const done = pages.filter(p => p.state === "checked").length;
+  $("#progress").textContent = `в эталоне ${done} из ${pages.length}`;
+  $("#list").innerHTML = pages.map(p => `<button data-id="${p.id}" class="${p.id === current ? "active" : ""}">
+      ${MARK[p.state]} ${esc(p.section_ru)} ${p.year || ""}<small>${esc(p.kind_ru)} · ${esc(p.id)}</small></button>`).join("");
+  document.querySelectorAll("#list button").forEach(b => b.onclick = () => open(b.dataset.id));
+}
+
+function applyZoom() { $("#img").style.transform = `translate(${ox}px, ${oy}px) scale(${zoom})`; }
+function fit() {
+  const box = $("#scan").getBoundingClientRect(), img = $("#img");
+  zoom = Math.min(box.width / img.naturalWidth, box.height / img.naturalHeight); ox = 0; oy = 0; applyZoom();
+}
+function zoomAt(f, cx, cy) {
+  ox = cx - (cx - ox) * f; oy = cy - (cy - oy) * f; zoom *= f; applyZoom();
+}
+$("#scan").addEventListener("wheel", e => {
+  e.preventDefault(); const r = $("#scan").getBoundingClientRect();
+  zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX - r.left, e.clientY - r.top);
+}, { passive: false });
+let drag = null;
+$("#scan").addEventListener("mousedown", e => { drag = [e.clientX - ox, e.clientY - oy]; });
+addEventListener("mouseup", () => drag = null);
+addEventListener("mousemove", e => { if (drag) { ox = e.clientX - drag[0]; oy = e.clientY - drag[1]; applyZoom(); } });
+$("#zin").onclick = () => { const r = $("#scan").getBoundingClientRect(); zoomAt(1.3, r.width / 2, r.height / 2); };
+$("#zout").onclick = () => { const r = $("#scan").getBoundingClientRect(); zoomAt(1 / 1.3, r.width / 2, r.height / 2); };
+$("#zfit").onclick = fit;
+
+async function open(id) {
+  current = id; started = Date.now();
+  data = await (await fetch("/api/page/" + encodeURIComponent(id))).json();
+  const img = $("#img"); img.onload = fit; img.src = "/scan/" + encodeURIComponent(id);
+  render(); loadList();
+}
+
+function recordHtml(r, i) {
+  const fields = data.fields.map(f => `<label>${esc(data.labels[f])}</label>
+      <textarea data-rec="${i}" data-f="${f}" rows="${String(r[f] ?? "").length > 60 ? 2 : 1}">${esc(r[f])}</textarea>`).join("");
+  return `<fieldset><legend class="rec-tools">Запись ${i + 1}
+      <span><label style="display:inline"><input type="checkbox" data-rec="${i}" data-f="continued" ${r.continued ? "checked" : ""}> начата раньше</label>
+      <button data-del="${i}">удалить</button></span></legend>${fields}
+      <label>примечание</label><textarea data-rec="${i}" data-f="note">${esc(r.note)}</textarea></fieldset>`;
+}
+
+function render() {
+  const m = data.meta, p = data.page || {};
+  const who = data.state === "checked" ? `<span class="state-checked">проверено ${esc(data.checked_at)}</span>`
+    : data.state === "draft" ? `<span class="state-draft">черновик модели ${esc(data.model)} — проверить каждое поле</span>`
+    : data.state === "note" ? `<span class="state-draft">есть замечание, в эталон не вошла</span>`
+    : `<b>черновика ещё нет</b> — можно набрать самому или подождать черновик`;
+  $("#form").innerHTML = `
+    <div class="meta"><b>${esc(m.title)}</b><br>файл ${m.n} · ${esc(data.meta.kind)} / ${esc(data.meta.section)} · ${who}</div>
+    <div class="hint">Пиши, как в книге. Нечитаемое — <b>[нрзб]</b>, часть слова — <b>Ива[нрзб]</b>. Не угадывать.
+      Лишнюю запись — удалить, пропущенную — добавить. Строки записи идут через весь разворот.</div>
+    ${data.error ? `<div class="hint">Модель ответила не по форме: ${esc(data.error)}</div>` : ""}
+    <fieldset><legend>Страница</legend>
+      ${data.page_fields.map(f => `<label>${{ year: "год", month: "месяц(ы)", folio: "лист", church: "церковь", hands_note: "почерк, состояние" }[f]}</label>
+        <input type="text" data-page="${f}" value="${esc(p[f])}">`).join("")}
+    </fieldset>
+    <div id="recs">${(data.records || []).map(recordHtml).join("")}</div>
+    <button id="add">+ запись</button>
+    <fieldset style="margin-top:10px"><legend>Итог</legend>
+      <label><input type="checkbox" id="skipped" ${data.skipped ? "checked" : ""}> страница не годится для эталона (пустая, не тот тип)</label>
+      <label>комментарий</label><textarea id="comment">${esc(data.comment)}</textarea>
+    </fieldset>
+    <div class="bar"><button class="save" id="save">Сохранить и дальше (⌘S)</button><span id="msg"></span></div>`;
+  $("#add").onclick = () => { collect(); data.records.push(Object.fromEntries(data.fields.map(f => [f, ""]))); render(); };
+  document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { collect(); data.records.splice(+b.dataset.del, 1); render(); });
+  $("#save").onclick = save;
+}
+
+function collect() {
+  data.page = data.page || {};
+  document.querySelectorAll("[data-page]").forEach(i => data.page[i.dataset.page] = i.value.trim());
+  document.querySelectorAll("[data-rec]").forEach(i => {
+    const r = data.records[+i.dataset.rec];
+    r[i.dataset.f] = i.type === "checkbox" ? i.checked : i.value.trim();
+  });
+  data.skipped = $("#skipped")?.checked; data.comment = $("#comment")?.value.trim();
+}
+
+async function save() {
+  collect();
+  const body = { page: data.page, records: data.records, skipped: data.skipped, comment: data.comment,
+                 seconds_spent: Math.round((Date.now() - started) / 1000) };
+  const r = await fetch("/api/save/" + encodeURIComponent(current), { method: "POST", body: JSON.stringify(body) });
+  if (!r.ok) { $("#msg").textContent = "не сохранилось: " + r.status; return; }
+  await loadList();
+  const next = pages.find(p => p.state === "draft");
+  if (next) open(next.id); else { $("#msg").textContent = "Все страницы проверены. Спасибо!"; }
+}
+addEventListener("keydown", e => { if ((e.metaKey || e.ctrlKey) && e.key === "s") { e.preventDefault(); save(); } });
+
+loadList().then(() => open((pages.find(p => p.state === "draft") || pages[0]).id));
+</script>
+</body>
+</html>

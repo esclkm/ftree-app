@@ -1,0 +1,1 @@
+(()=>{const a=[...document.querySelectorAll("a")].find(e=>/^\d[\d,.]*\s*(followers|following)$/.test(e.innerText.trim())&&e.innerText.includes(KIND));if(!a)return "нет ссылки";a.click();return "открыто"})()

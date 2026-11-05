@@ -1,0 +1,9 @@
+#!/bin/sh
+# Перед коммитом: дерево и карточки без ошибок. Поставил `rodo init`; обойти в крайнем случае — git commit --no-verify.
+ROOT=$(git rev-parse --show-toplevel) || exit 0
+RODO="{rodo}"
+[ -x "$RODO" ] || RODO=$(command -v rodo) || { echo "Нет rodo — проверки перед коммитом пропущены (rodo setup)"; exit 0; }
+export FTREE_ROOT="$ROOT"
+"$RODO" check-tree --quiet || { echo "✋ Коммит остановлен: в дереве ошибки. Подробно: rodo check-tree"; exit 1; }
+"$RODO" check-cards --quiet || { echo "✋ Коммит остановлен: карточки записаны так, что сайт не соберётся. Подробно: rodo check-cards"; exit 1; }
+exit 0

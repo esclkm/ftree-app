@@ -1,0 +1,195 @@
+@use 'mixins' as *;
+
+// страницы дерева и карты — на всю ширину
+body:has(#FamilyChart), body:has(#map) {
+  main { max-width: none; padding: 0; }
+  .ru-note { display: none; }
+}
+// карта — ровно под шапкой до низа экрана: шапка на телефоне в две строки, поэтому не «100vh минус число», а колонка
+body:has(#map) #root { display: flex; flex-direction: column; height: 100dvh; }
+body:has(#map) main { flex: 1; min-height: 0; width: 100%; }
+.map-page { height: 100%; }
+#map { width: 100%; height: 100%; }
+// группа близких точек (MapPage.tsx, leaflet.markercluster): кружок цвета точки, внутри — сколько мест
+#map .map-cluster {
+  display: grid; place-items: center; border-radius: 50%; background: var(--map-dot); border: 3px solid var(--card);
+  box-shadow: var(--shadow); color: var(--card); font: 600 13px/1 var(--f-body); opacity: .92;
+}
+
+// панель над деревом: настройки, поиск, родство, «?»
+.treebar {
+  display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 8px 16px; background: var(--surface); border-bottom: 1px solid var(--outline);
+  .kin { margin-top: 0; flex: 1 1 300px; font-size: 14px; > div { display: inline; margin-right: 10px; } }
+  .popover:last-child { margin-left: auto; }
+}
+.kin-pick { display: inline-flex; align-items: center; gap: 4px; vertical-align: middle; .psearch { min-width: 220px; } }
+.chip-btn { border: 1px solid var(--outline); background: var(--card); border-radius: 12px; padding: 1px 10px; font: inherit; color: var(--on-surface); cursor: pointer; }
+
+// окошко под кнопкой-значком (настройки, «?»)
+.popover { position: relative; }
+.popover .icon-btn.on { background: var(--secondary-container); color: var(--on-secondary-container); }
+.popover-body { position: absolute; top: 46px; left: 0; z-index: 50; margin: 0; padding: 14px 16px; box-shadow: var(--shadow-2); }
+.popover:last-child .popover-body { left: auto; right: 0; }
+.help { width: min(460px, calc(100vw - 24px)); font-size: 14px; p { margin: 0 0 10px; } }
+.legend { display: flex; flex-wrap: wrap; gap: 6px; .chip { font-size: 12px; white-space: normal; } }
+
+// поиск человека: список с фото и годами
+.psearch {
+  position: relative; display: flex; align-items: center; gap: 6px; min-width: 260px; padding: 0 12px; border: 1px solid var(--outline);
+  border-radius: 20px; background: var(--card);
+  > .ic { color: var(--muted); }
+  input { flex: 1; min-width: 0; border: 0; outline: 0; font: 15px var(--f-body); padding: 8px 0; background: none; color: inherit; }
+}
+.psearch-list {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0; min-width: 300px; z-index: 60; list-style: none; margin: 0; padding: 4px;
+  background: var(--card); border-radius: 12px; box-shadow: var(--shadow-2);
+  li { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 8px; cursor: pointer; &.cur { background: var(--surface-2); } }
+  img, .ph { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex: none; }
+  .ph { display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 500; .ic { fill: #fff; } @include ph-colors; }
+  .who { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+  b { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  small { color: var(--muted); font-size: 12px; }
+}
+
+#FamilyChart {
+  width: 100%; height: calc(100vh - 150px); background: var(--surface-1); color: #fff;
+  // у библиотеки свои элементы .card — наш стиль карточки на них не распространяется
+  .card { background: none; box-shadow: none; padding: 0; margin: 0; border-radius: 0; }
+  // линии: библиотека рисует их белым (под тёмный фон) — у нас фон светлый
+  // толщина линий — одним местом: обычная, цвет брака, путь родства, точки развода (links.ts берёт отсюда же)
+  --link-w: 1px; --mar-w: 1.75px; --path-w: 2px; --div-w: 3px;  // --path-w — и линия пути, и рамка карточек на нём
+  --link-r: 6px;  // радиус скругления углов линий «родители → ребёнок» (links.ts, roundLinks)
+  .link { stroke: #9aa597 !important; stroke-width: var(--link-w); }
+  .link.f3-path-to-main { stroke: var(--primary) !important; stroke-width: var(--path-w); }
+  .link-text { display: none; }
+  // путь родства: цветные линии (цвет задаёт highlightPath в links.ts) и такая же обводка карточек на пути
+  .link.kin-path { stroke-linecap: round; }
+  path.div-mask { stroke: var(--surface-1); stroke-width: 8px; }
+}
+
+// карточки в дереве — вертикальные: фото сверху, подписи снизу
+.fc-card {
+  position: relative; width: 132px; min-height: 160px; padding: 10px 6px 8px; border-radius: 14px; color: #fff; font: 13px/1.25 var(--f-body);
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; cursor: pointer; box-shadow: var(--shadow); transition: box-shadow .2s;
+  &:hover { box-shadow: var(--shadow-2); }
+  &.M { background: var(--male); } &.F { background: var(--female); }
+  &.main { outline: 3px solid #ffd180; outline-offset: 2px; }
+  &.on-path:not(.main) { outline: var(--path-w, 2px) solid var(--path); outline-offset: 2px; }  // та же толщина, что у линии пути
+  img, .ph { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; flex: none; border: 2px solid rgba(255, 255, 255, .55); }
+  .ph { display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, .2); color: #fff; font-size: 24px; font-weight: 500;
+    .ic { width: 38px; height: 38px; fill: #fff; } @include ph-colors; }
+  .tx { min-width: 0; width: 100%; }
+  // имя и фамилия — обычным шрифтом: жирный мешает читать дерево (29.09.2026)
+  .n, .n2 { font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .l { opacity: .9; font-size: 12px; margin-top: 1px; }
+  .b { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 6px; font-size: 11.5px; font-weight: 500; margin-top: 4px; }
+  .b span { display: inline-flex; align-items: center; gap: 2px; }
+  .b .ic { width: 13px; height: 13px; fill: currentColor; }
+  // кем человек приходится «мне» — ярлычок над карточкой
+  .kin-tag {
+    position: absolute; top: -10px; left: 50%; transform: translateX(-50%); max-width: 124%; padding: 1px 8px; border-radius: 9px; z-index: 1;
+    background: var(--ours-bg); color: var(--ours); border: 1px solid color-mix(in srgb, var(--ours) 35%, transparent); font-size: 10.5px; font-weight: 500; line-height: 1.5;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    &.me { background: #ffd180; border-color: #e0a84a; }
+  }
+  // о человеке пока ничего: непрозрачный светлый фон и пунктир — линии под карточкой не просвечивают
+  &.empty {
+    background: var(--card); color: var(--muted); border: 1.5px dashed currentColor; box-shadow: none;
+    &.M { color: var(--male); } &.F { color: var(--female); }
+    .ph { background: rgba(0, 0, 0, .06); .ic { fill: currentColor; } @include ph-colors; }
+    .l { color: var(--muted); }
+  }
+}
+// насколько связь с деревом доказана (kinship: поле карточки или оценка по фактам, cards/kinship.py).
+// Чем слабее связь — тем бледнее карточка (цвет пола смешан со светлым фоном, не прозрачность: линии под карточкой
+// не просвечивают); на бледной — тёмный текст. При сомнении — точка в правом верхнем углу (у «доказано» точки нет),
+// с подсказкой (card.ts); прозрачная кайма вокруг точки — чтобы в неё было легче попасть мышью.
+// Тонкая рамка на цветной карточке не читалась (05.10.2026)
+:root { --k-proven: #2e7d32; --k-likely: #8bc34a; --k-possible: #fbc02d; --k-unlikely: #ef6c00; --k-no: #c62828; }
+.fc-card { --base: var(--male); &.F { --base: var(--female); } }
+.fc-card[class*=" k-"]:not(.empty) { background: color-mix(in srgb, var(--base) var(--fill), var(--card)); }
+.fc-card .kin-dot { position: absolute; top: 1px; right: 1px; width: 20px; height: 20px; z-index: 1; cursor: help;
+  &::before { content: ''; position: absolute; inset: 5px; border-radius: 50%; background: var(--kin); box-shadow: 0 0 0 2px #fff; } }
+.fc-card.k-proven { --kin: var(--k-proven); --fill: 100%; }
+.fc-card.k-likely { --kin: var(--k-likely); --fill: 100%; }
+.fc-card.k-possible { --kin: var(--k-possible); --fill: 62%; }
+.fc-card.k-unlikely, .fc-card.k-no { color: var(--on-surface); .ph { border-color: rgba(0, 0, 0, .12); } }
+.fc-card.k-unlikely { --kin: var(--k-unlikely); --fill: 28%; }
+.fc-card.k-no { --kin: var(--k-no); --fill: 14%; }
+@each $k in proven, likely, possible, unlikely, no { .kin-sample.k-#{$k} { background: var(--k-#{$k}); } }
+.kin-sample { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 1px; }
+// образцы для легенды
+.empty-sample { display: inline-block; width: 20px; height: 12px; background: var(--card); border: 1.5px dashed var(--muted); border-radius: 3px; }
+.mar-sample { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 1px; }
+.path-sample { display: inline-block; width: 24px; height: 0; border-top: 4px solid var(--path); border-radius: 2px; vertical-align: middle; }
+.div-sample { display: inline-block; width: 24px; height: 0; border-top: 3px dotted var(--muted); vertical-align: middle; }
+
+// дерево отдалено: только имя и фамилия, крупно (переключает tree.ts по масштабу)
+#FamilyChart.far .fc-card {
+  justify-content: center; padding: 4px 6px;
+  .b, .l, img, .ph { display: none; }
+  .n, .n2 { font-size: 20px; line-height: 1.2; }
+  .kin-tag { font-size: 15px; top: -14px; }
+}
+#FamilyChart.very-far .fc-card {
+  .n, .n2 { font-size: 24px; }
+  .kin-tag { display: none; }
+}
+
+// дерево на телефоне: сверху только поиск и родство без цепочки; карточки меньше, без значков — влезает больше людей
+@include phone {
+  #FamilyChart { height: calc(100vh - 118px); }
+  // отдалили — имена крупнее, но по узкой карточке телефона (84 px), чтобы не обрезались
+  // длинное слово переносится с дефисом, а не обрезается: фото и годы в этом режиме скрыты — место по высоте есть
+  // 13 px: переносятся только 21 из 371 слова (самые длинные); при 15 — уже 59, и «Мику-лик» (замер 29.09.2026)
+  #FamilyChart.far .fc-card, #FamilyChart.very-far .fc-card { .n, .n2 { font-size: 13px; white-space: normal; overflow: visible;
+    text-overflow: clip; overflow-wrap: anywhere; hyphens: auto; line-height: 1.15; } .nlong { font-size: 12px; } }
+  .treebar { padding: 6px 10px; gap: 6px 8px; .kin .kin-chain { display: none; } }
+  .treebar { flex-wrap: wrap; }
+  // первая строка — настройки, поиск, «?»; вторая — кем приходится («Вам: дед») и «Схема / По шагам»
+  .treebar > .psearch { min-width: 0; flex: 1 1 calc(100% - 52px); order: 1; }
+  .treebar > .popover:last-child { order: 2; margin-left: 0; }  // «?»
+  .treebar > .kin { order: 3; }
+  .treebar > .tree-mode { order: 4; margin-left: auto; }
+  .treebar > .kin { flex: 1 1 auto; }
+  // схема и «по шагам» на телефоне: шрифт и фото — читаемые, отступ по бокам внутри карточки — 2 px; между карточками
+  // — 10 px (ширина и шаг — в FamilyTree.tsx: 84 и 94)
+  .fc-card {
+    width: 84px; min-height: 100px; padding: 5px 2px 4px; gap: 2px; border-radius: 9px; font-size: 12px; line-height: 1.2;
+    img, .ph { width: 42px; height: 42px; border-width: 1.5px; }
+    .ph { font-size: 16px; .ic { width: 24px; height: 24px; } }
+    .l { font-size: 11px; margin-top: 0; }
+    .nlong { font-size: 10.5px; letter-spacing: -.1px; }  // длинное слово — мельче (card.ts)
+    &.on-path:not(.main) { outline-offset: 1px; }
+    .b span:not(.kids) { display: none; }  // на телефоне из значков — только число детей
+    .kin-tag { font-size: 9.5px; top: -9px; padding: 0 5px; }
+  }
+}
+
+
+// переключатель «Схема / По шагам» (TreeApp)
+.tree-mode {
+  display: inline-flex; border: 1px solid var(--outline); border-radius: 18px; overflow: hidden; flex: none;
+  button { border: 0; background: var(--card); padding: 6px 12px; font: 500 13px var(--f-body); color: var(--muted); cursor: pointer; }
+  button.on { background: var(--secondary-container); color: var(--on-secondary-container); }
+}
+// дерево «по шагам» (TreeSteps): строки поколений, каждая листается вбок; карточки — те же, что в схеме
+.steps { padding: 8px 0 40px; }
+.steps-hint { margin: 16px 14px 8px; }  // внизу: дерево начинается сразу
+.steps-row {
+  margin: 0 0 6px;
+  h3 { display: flex; align-items: center; gap: 8px; margin: 10px 14px 6px; font-size: 14px; color: var(--muted); .count { margin-left: 0; } }
+  &.tree_center { background: var(--surface-1); padding: 2px 0 10px; }
+}
+.steps-cards {
+  display: flex; gap: 10px; overflow-x: auto; padding: 14px 14px 6px; scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+.steps-card { flex: none; scroll-snap-align: center; cursor: pointer;  // карточка — та же .fc-card, что в схеме
+  &.center .fc-card { outline: 3px solid #f2c572; outline-offset: 2px; }
+}
+@include phone {
+  .treebar .kin-other { display: none; }  // «кем приходится другому…» — на телефоне занимает строку; есть на компьютере
+  .treebar .kin > .life { display: none; }  // «Найдите себя и нажмите „Это я“…» — на телефоне только кнопка «Это я»
+  .tree-mode button { padding: 5px 9px; font-size: 12px; }
+}

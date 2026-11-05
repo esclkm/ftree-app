@@ -1,0 +1,19 @@
+{
+  "extraKnownMarketplaces": {
+    "ftree-app": {
+      "source": {
+        "source": "github",
+        "repo": "esclkm/ftree-app"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "ftree@ftree-app": true
+  },
+  "permissions": {
+    "allow": [
+      "Bash({app}/tools/rodo skill-notes:*)",
+      "Bash(rodo skill-notes:*)"
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "jsPlugins": [{"name": "react-js", "specifier": "eslint-plugin-react"}],
+  "plugins": ["react", "typescript", "unicorn", "oxc", "vitest"],
+  "categories": {"correctness": "error", "suspicious": "warn"},
+  "env": {"browser": true, "es2024": true},
+  "ignorePatterns": ["dist", "dist-app", "src/data/schema.gen.ts"],
+  "rules": {
+    "react/react-in-jsx-scope": "off",
+    "no-underscore-dangle": "off",
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "error",
+    "react-js/jsx-no-bind": "warn"
+  },
+  "overrides": [
+    {"files": ["src/app/notes/**"], "rules": {"react-js/jsx-no-bind": "error"}}
+  ]
+}

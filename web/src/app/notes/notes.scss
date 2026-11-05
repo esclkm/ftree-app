@@ -1,0 +1,118 @@
+// Режим заметок (notes/): панель справа, «＋» у данных, меню у фото, «Цитата в заметку», разбор фото.
+// Всё это есть только на компьютере и только у автора (?notes) — у родни ни одно правило ниже не срабатывает.
+// ширина панели — треть экрана: 380 px на ноутбуке 1200 px, 640 px на мониторе 2000 px, не шире 720 px
+:root { --notes-w: clamp(380px, 32vw, 720px); }
+
+// кнопка в шапке — с подписью, чтобы её было видно; открыта панель — залита
+.notes-btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border: 1px solid var(--primary); border-radius: 18px;
+  background: var(--card); color: var(--primary); font: 500 14px var(--f-body); cursor: pointer;
+  .ic { width: 20px; height: 20px; }
+  &:hover { background: var(--primary-container); }
+  &.on { background: var(--primary); color: var(--on-primary); }
+  b { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; box-sizing: border-box; text-align: center;
+    background: var(--primary); color: var(--on-primary); font-size: 11px; line-height: 18px; }
+  &.on b { background: var(--on-primary); color: var(--primary); }
+}
+
+// место под панель — у всей страницы: она центрируется в том, что осталось слева (отступ у main сдвигал её вправо)
+body.notes-open { padding-right: var(--notes-w); }
+// шапка не влезает рядом с панелью — в меню только значки (как на телефоне), подпись — во всплывающей подсказке
+@media (max-width: 1900px) { body.notes-open .appbar nav a { padding: 8px 10px; span { display: none; } } }
+
+.notes-panel {
+  position: fixed; z-index: 1100; top: 0; right: 0; bottom: 0; width: var(--notes-w); box-sizing: border-box; display: flex; flex-direction: column;
+  background: var(--surface); border-left: 1px solid var(--outline); box-shadow: var(--shadow-2);
+  > header { display: flex; align-items: center; justify-content: space-between; padding: 8px 8px 0 16px;
+    h2 { margin: 0; font-size: 18px; display: flex; align-items: center; gap: 8px; } }
+  .notes-tools { display: flex; align-items: center; gap: 2px; padding: 8px 12px; border-bottom: 1px solid var(--outline);
+    .btn { margin-right: auto; } button:disabled { opacity: .45; cursor: default; } }
+  .notes-list { flex: 1; overflow-y: auto; padding: 12px 12px 40px; }
+  .note { font-size: 13px; color: var(--muted); }
+  textarea { width: 100%; box-sizing: border-box; resize: none; overflow: hidden; min-height: 44px; padding: 8px 10px; border: 1px solid var(--outline);
+    border-radius: 10px; font: 14px/1.45 var(--f-body); background: var(--card); color: var(--on-surface);
+    &:focus { outline: 2px solid var(--primary); outline-offset: -1px; } }
+}
+.notes-general { display: block; margin-bottom: 14px; span { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 4px; } }
+.notes-group { margin-bottom: 16px; h3 { margin: 0 0 6px; font-size: 15px; } }
+.note-card {
+  background: var(--card); border-radius: 12px; padding: 8px 10px 10px; margin-bottom: 8px; box-shadow: var(--shadow);
+  .note-head { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; .icon-btn { margin-left: auto; } }
+  .note-where { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  blockquote { margin: 0 0 8px; padding: 4px 0 4px 10px; border-left: 3px solid var(--primary-container); font-size: 13px; color: var(--muted);
+    max-height: 7.5em; overflow: auto; white-space: pre-line; }
+}
+.icon-btn.small { width: 28px; height: 28px; flex: none; .ic { width: 18px; height: 18px; } }
+.note-marks { margin: -2px 0 8px; .verdicts { margin-top: 0; } }
+.ppin-wrap { display: inline; }
+.note-photo { display: flex; gap: 10px; margin-bottom: 8px;
+  img { width: 88px; height: 66px; object-fit: cover; border-radius: 8px; flex: none; background: var(--surface-2); }
+  code { font-size: 11px; word-break: break-all; color: var(--muted); } }
+.note-card .verdict-label { font-size: 12px; margin-top: 2px; color: var(--muted); }
+
+// приговоры фото: цвет и значок одинаковые в меню, в панели и в разборе
+@mixin verdict-colors {
+  &.v-ok { --v: #2e7d32; } &.v-remove { --v: #b3261e; } &.v-better { --v: #8a5a00; }
+  &.v-wrong_place, &.v-wrong_person, &.v-caption, &.v-wrong_date, &.v-wrong_text, &.v-other_person { --v: #6b4fa0; }
+  &.v-remove_line { --v: #b3261e; } &.v-need_source { --v: #8a5a00; } &.v-add_event { --v: #2e7d32; }
+}
+.verdicts { display: flex; gap: 2px; margin-top: 4px;
+  button { @include verdict-colors; width: 30px; height: 30px; border: 1px solid transparent; border-radius: 8px; background: none; cursor: pointer; color: var(--v);
+    display: flex; align-items: center; justify-content: center; .ic { width: 18px; height: 18px; }
+    &:hover { background: var(--surface-1); } &.on { background: var(--v); color: #fff; } } }
+
+// «＋» у данных — тихая кнопка в строку; у абзаца — на левом поле, только под мышью
+.npin {
+  display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; margin-left: 6px; padding: 0; vertical-align: middle;
+  border: 0; border-radius: 50%; background: var(--primary-container); color: var(--on-primary-container); cursor: pointer; opacity: .55;
+  .ic { width: 16px; height: 16px; vertical-align: 0; }
+  &:hover { opacity: 1; box-shadow: var(--shadow); }
+  @include verdict-colors;
+  &.done { opacity: 1; background: var(--v); color: #fff; }
+}
+h1 .npin, h2 .npin { margin-left: 10px; }
+.nblock { position: relative; }
+.npin.block { position: absolute; left: -30px; top: .15em; margin: 0; opacity: 0; }
+.nblock:hover > .npin.block { opacity: .8; }
+li.nblock > .npin.block { left: -44px; }
+
+// «＋» на снимке — в правом верхнем углу; у круглого портрета — снизу по центру
+.pin-host { position: relative; }
+.strip .pin-host { flex: none; }
+.ppin { position: absolute; top: 6px; right: 6px; z-index: 2; .npin { margin: 0; opacity: .9; width: 28px; height: 28px; box-shadow: var(--shadow); } }
+.avatar .ppin { top: auto; bottom: 4px; right: 50%; transform: translateX(50%); }
+.pmenu {
+  position: fixed; z-index: 1300; display: flex; flex-direction: column; min-width: 240px; padding: 6px; background: var(--card); border-radius: 12px; box-shadow: var(--shadow-2);
+  button { @include verdict-colors; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 0; border-radius: 8px; background: none; cursor: pointer;
+    font: 14px var(--f-body); color: var(--on-surface); text-align: left;
+    .ic { color: var(--v, var(--primary)); width: 20px; height: 20px; } &:hover { background: var(--surface-1); } &.on { background: var(--surface-2); font-weight: 500; } }
+}
+
+.quote-pin {
+  position: fixed; z-index: 1200; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 0; border-radius: 16px; cursor: pointer;
+  background: var(--primary); color: var(--on-primary); font: 500 13px var(--f-body); box-shadow: var(--shadow-2);
+  .ic { width: 16px; height: 16px; fill: currentColor; }
+}
+
+// ---------- разбор фото (/review) ----------
+main:has(.review) { max-width: min(1400px, 100%); }
+.review-head { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 12px;
+  h1 { margin: 0; font-size: 22px; display: flex; align-items: center; gap: 8px; } .review-count { color: var(--muted); }
+  label { margin-left: auto; font-size: 14px; cursor: pointer; } }
+.review-body { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 20px; align-items: start; }
+.review-img { display: flex; align-items: center; gap: 4px;
+  img { flex: 1; min-width: 0; max-height: 72vh; object-fit: contain; border-radius: 12px; background: var(--surface-2); }
+  .icon-btn:disabled { opacity: .3; } }
+.review-info { font-size: 14px;
+  .review-pos { color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+  .cap { font-size: 16px; margin: 8px 0; }
+  .kv th { white-space: nowrap; }
+  code { font-size: 12px; word-break: break-all; } }
+.review-verdicts { display: flex; flex-direction: column; gap: 4px; margin: 14px 0 8px;
+  button { @include verdict-colors; display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--outline); border-radius: 10px;
+    background: var(--card); cursor: pointer; font: 14px var(--f-body); color: var(--on-surface); text-align: left;
+    .ic { color: var(--v, var(--primary)); width: 20px; height: 20px; }
+    kbd { min-width: 22px; padding: 1px 5px; border: 1px solid var(--outline); border-radius: 5px; font: 12px monospace; text-align: center; color: var(--muted); }
+    &:hover { background: var(--surface-1); }
+    &.on { background: var(--v); border-color: var(--v); color: #fff; .ic, kbd { color: #fff; border-color: rgba(255, 255, 255, .5); } } } }
+@media (max-width: 1100px) { .review-body { grid-template-columns: 1fr; } }

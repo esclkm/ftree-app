@@ -1,0 +1,17 @@
+#!/bin/sh
+# Python проекта: тот, у которого есть библиотеки скриптов (yaml, PIL). Хуки Claude и git зовут скрипты через него.
+# Первым — .venv проекта (`uv sync`, версии — uv.lock): обновление Homebrew его не трогает.
+# Зачем: 01.10.2026 Homebrew переключил python3 на 3.14 без этих библиотек — все проверки молча падали.
+# Свой выбор — переменной RELATIVES_PY. Запасной ряд — ниже, по порядку.
+ROOT=$(cd "$(dirname "$0")/.." && pwd)
+# свежий клон без .venv — uv поставит его сам (версии — uv.lock)
+if [ -z "$RELATIVES_PY" ] && [ ! -x "$ROOT/.venv/bin/python" ] && command -v uv >/dev/null 2>&1; then
+  uv sync --project "$ROOT" --frozen -q >&2 || echo "tools/py: uv sync не прошёл" >&2
+fi
+for py in "$RELATIVES_PY" "$ROOT/.venv/bin/python" "$HOME/.venvs/relatives/bin/python" python3.12 python3.13 python3 python3.14; do
+  [ -n "$py" ] || continue
+  command -v "$py" >/dev/null 2>&1 || continue
+  "$py" -c 'import yaml, PIL' 2>/dev/null && exec "$py" "$@"
+done
+echo "tools/py: нет Python с библиотеками yaml и PIL. Поставить: uv sync (в корне проекта)" >&2
+exit 127

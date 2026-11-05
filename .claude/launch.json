@@ -1,0 +1,38 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "app",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "web",
+        "run",
+        "app"
+      ],
+      "port": 5173
+    },
+    {
+      "name": "etalon",
+      "runtimeExecutable": "tools/py",
+      "runtimeArgs": [
+        "tools/scripts/etalon.py",
+        "serve",
+        "--port",
+        "8765"
+      ],
+      "port": 8765
+    },
+    {
+      "name": "metric-review",
+      "runtimeExecutable": "tools/py",
+      "runtimeArgs": [
+        "tools/scripts/metric_review.py",
+        "serve",
+        "--port",
+        "8766"
+      ],
+      "port": 8766
+    }
+  ]
+}

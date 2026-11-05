@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ftree-app.invalid/schema/research.schema.json",
+  "title": "Что ещё искать — data/research.json",
+  "description": "План поиска по предкам из <папка поиска>/ПОИСК_ДАЛЬШЕ.md (paths.RESEARCH_NEXT): текст без заголовка, очищен от контактов, ссылки Obsidian — по номеру, как у текстов источников. Нет файла — нет и этого JSON.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "research/1"
+    },
+    "md": {
+      "description": "Текст плана (Markdown, ссылки по номеру — как у фактов).",
+      "type": "string",
+      "minLength": 1
+    },
+    "updated": {
+      "description": "Когда план правили: updated в свойствах файла, иначе время файла (ГГГГ-ММ-ДД).",
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "schema",
+    "md"
+  ],
+  "additionalProperties": false
+}

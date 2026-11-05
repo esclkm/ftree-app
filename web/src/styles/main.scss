@@ -1,0 +1,8 @@
+// Стили сайта. Порядок важен: общее → части страниц → дерево (его правила перекрывают общие .card и .kin)
+@use 'tokens';
+@use 'base';
+@use 'appbar';
+@use 'components';
+@use 'bio';
+@use 'media';
+@use 'tree';

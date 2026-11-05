@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ftree-app.invalid/schema/source.schema.json",
+  "title": "Источник — data/sources/<id>.json",
+  "description": "Из карточки 3_research/tree/sources/<Название>.md (GEDCOM X SourceDescription). Сами сканы и PDF — отдельными файлами; закрытые без входа не отдаются.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "source/1"
+    },
+    "id": {
+      "$ref": "common.schema.json#/$defs/Id"
+    },
+    "slug": {
+      "$ref": "common.schema.json#/$defs/Slug"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "titles": {
+      "description": "Название на других языках (3_research/tree/translations/<язык>/<sources|documents>/…); нет — русское.",
+      "type": "object",
+      "properties": {
+        "pl": {
+          "type": "string",
+          "minLength": 1
+        },
+        "es": {
+          "type": "string",
+          "minLength": 1
+        },
+        "en": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "provenance": {
+      "$ref": "common.schema.json#/$defs/Provenance"
+    },
+    "type": {
+      "description": "Вид источника, как source_type в карточке (Charted Roots); book…autobiography — тексты и вырезки из sources/press (PRESS_TYPES в tools/scripts/cards/sources.py).",
+      "enum": [
+        "custom",
+        "vital_record",
+        "church_record",
+        "census",
+        "immigration",
+        "military",
+        "newspaper",
+        "letter",
+        "photo",
+        "audio",
+        "book",
+        "magazine",
+        "memoir",
+        "manuscript",
+        "autobiography"
+      ]
+    },
+    "author": {
+      "type": "string"
+    },
+    "repository": {
+      "type": "string"
+    },
+    "date": {
+      "$ref": "common.schema.json#/$defs/Date"
+    },
+    "identifiers": {
+      "$ref": "common.schema.json#/$defs/Identifiers"
+    },
+    "media": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/Media"
+      }
+    },
+    "people": {
+      "description": "О ком этот источник.",
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/Id"
+      }
+    },
+    "md": {
+      "description": "Текст карточки с расшифровкой (Markdown, ссылки по номеру — как у фактов).",
+      "type": "string"
+    },
+    "audio": {
+      "description": "Запись разговора в семье: на сайте — только описание, без текста и звука (site_data/privacy.py).",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "schema",
+    "id",
+    "slug",
+    "title",
+    "provenance",
+    "type",
+    "people"
+  ],
+  "additionalProperties": false
+}

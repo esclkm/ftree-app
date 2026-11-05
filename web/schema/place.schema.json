@@ -1,0 +1,364 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ftree-app.invalid/schema/place.schema.json",
+  "title": "Место — data/places/<id>.json",
+  "description": "Из карточки 3_research/tree/places/<Имя>.md. Одно место — одна запись; смена государств — списком с годами (как placeref с датой в Gramps и P131 + начало/конец в Wikidata), а не копией места на каждую эпоху.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "place/1"
+    },
+    "id": {
+      "$ref": "common.schema.json#/$defs/Id"
+    },
+    "slug": {
+      "$ref": "common.schema.json#/$defs/Slug"
+    },
+    "names": {
+      "$ref": "common.schema.json#/$defs/LangText"
+    },
+    "aliases": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "type": {
+      "enum": [
+        "country",
+        "region",
+        "district",
+        "city",
+        "town",
+        "village",
+        "locality",
+        "street",
+        "house",
+        "cemetery",
+        "church",
+        "hospital",
+        "school",
+        "university",
+        "river",
+        "other"
+      ]
+    },
+    "real": {
+      "description": "Настоящее место на карте (false — вымышленное или неясное).",
+      "type": "boolean"
+    },
+    "coords": {
+      "type": "object",
+      "properties": {
+        "lat": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "lng": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        }
+      },
+      "required": [
+        "lat",
+        "lng"
+      ],
+      "additionalProperties": false
+    },
+    "coords_checked": {
+      "description": "false — деревень с таким названием несколько, координаты под вопросом.",
+      "type": "boolean"
+    },
+    "parent": {
+      "$ref": "common.schema.json#/$defs/Id"
+    },
+    "states": {
+      "description": "«Государства по годам». Обязательны у места без parent (кроме реки) — иначе у людей пустые «Места и эпохи».",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "$ref": "common.schema.json#/$defs/Date"
+          },
+          "state": {
+            "$ref": "common.schema.json#/$defs/LangText"
+          },
+          "main": {
+            "description": "Выделено в карточке (**Польша**) — главная эпоха для нашей истории.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "date",
+          "state"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "states_from": {
+      "description": "Эпохи не свои, а места выше (деревня → район → страна): номер этого места.",
+      "$ref": "common.schema.json#/$defs/Id"
+    },
+    "media": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/Media"
+      }
+    },
+    "people": {
+      "description": "Кто здесь родился, жил, умер.",
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/Id"
+      }
+    },
+    "wikidata": {
+      "type": "string",
+      "pattern": "^Q[0-9]+$"
+    },
+    "who": {
+      "description": "Кто связан с местом и чем: родился, жил, работал… (ключи надписей: pp_born, ev_residence …).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "person": {
+            "$ref": "common.schema.json#/$defs/Id"
+          },
+          "what": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "events": {
+            "description": "Что именно было здесь и когда: событие (ключ ev_*), его даты и суть одной фразой (Markdown) — чтобы на карте было видно не просто «работа», а кем и в какие годы.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "what": {
+                  "type": "string"
+                },
+                "date": {
+                  "$ref": "common.schema.json#/$defs/Date"
+                },
+                "text": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "what"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "person",
+          "what"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "mentions": {
+      "description": "Кто упоминает место ссылкой в биографии или карточке, но не родился, не умер и не жил там по событиям дерева.",
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/Id"
+      }
+    },
+    "about": {
+      "description": "«О месте» — вводный текст страницы: что это, где, чем важно для семьи (раздел «## О месте» карточки; перевод — «## O miejscu», «## Sobre el lugar», «## About the place»).",
+      "$ref": "common.schema.json#/$defs/LangText"
+    },
+    "inside": {
+      "description": "Места внутри этого (parent_place — это место): дома, больницы, деревни района.",
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/Id"
+      }
+    },
+    "nearby": {
+      "description": "Города и деревни не дальше 150 км, ближние первыми (кроме мест выше и внутри).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "place": {
+            "$ref": "common.schema.json#/$defs/Id"
+          },
+          "km": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "place",
+          "km"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "similar": {
+      "description": "Места того же рода внутри того же места выше, ближние первыми; без тех, что уже в nearby.",
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/Id"
+      }
+    },
+    "md": {
+      "description": "Текст карточки места (Markdown, ссылки по номеру), без «Государств по годам» и «О месте».",
+      "type": "string"
+    },
+    "tr": {
+      "description": "Перевод текста карточки места (3_research/tree/translations/<язык>/places/<Имя карточки>.md); «О месте» перевода — в about.",
+      "type": "object",
+      "properties": {
+        "pl": {
+          "type": "object",
+          "properties": {
+            "md": {
+              "type": "string"
+            },
+            "ai": {
+              "const": true,
+              "description": "Перевод ИИ, не проверен носителем языка."
+            },
+            "stale": {
+              "const": true,
+              "description": "Русский текст поменялся после перевода."
+            }
+          },
+          "additionalProperties": false
+        },
+        "es": {
+          "type": "object",
+          "properties": {
+            "md": {
+              "type": "string"
+            },
+            "ai": {
+              "const": true,
+              "description": "Перевод ИИ, не проверен носителем языка."
+            },
+            "stale": {
+              "const": true,
+              "description": "Русский текст поменялся после перевода."
+            }
+          },
+          "additionalProperties": false
+        },
+        "en": {
+          "type": "object",
+          "properties": {
+            "md": {
+              "type": "string"
+            },
+            "ai": {
+              "const": true,
+              "description": "Перевод ИИ, не проверен носителем языка."
+            },
+            "stale": {
+              "const": true,
+              "description": "Русский текст поменялся после перевода."
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "house": {
+      "description": "Только у дома (type: house): что за жильё, когда построен и когда его не стало, первый и последний год, когда в нём жили наши.",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "description": "Что за жильё: private — свой дом, apartment — квартира, barrack — барак, dorm — общежитие, hut — хата, изба (надписи — house_<вид>).",
+          "enum": [
+            "private",
+            "apartment",
+            "barrack",
+            "dorm",
+            "hut"
+          ]
+        },
+        "built": {
+          "$ref": "common.schema.json#/$defs/Date"
+        },
+        "gone": {
+          "$ref": "common.schema.json#/$defs/Date"
+        },
+        "from": {
+          "type": "integer"
+        },
+        "to": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "residents": {
+      "description": "Кто жил в доме и когда — по событиям «место жительства» (residence) и местам рождения, по году. Только у дома.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "person": {
+            "$ref": "common.schema.json#/$defs/Id"
+          },
+          "date": {
+            "$ref": "common.schema.json#/$defs/Date"
+          },
+          "what": {
+            "enum": [
+              "ev_residence",
+              "pp_born"
+            ]
+          }
+        },
+        "required": [
+          "person",
+          "what"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "id",
+    "slug",
+    "names",
+    "type",
+    "real",
+    "people"
+  ],
+  "additionalProperties": false,
+  "if": {
+    "not": {
+      "anyOf": [
+        {
+          "required": [
+            "parent"
+          ]
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "river"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "then": {
+    "required": [
+      "states"
+    ]
+  }
+}

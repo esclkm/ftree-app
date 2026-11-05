@@ -1,0 +1,16 @@
+.DS_Store
+**/.DS_Store
+__pycache__/
+*.pyc
+*.log
+.venv/
+node_modules/
+# Obsidian: состояние окна
+.obsidian/workspace*.json
+.trash/
+# Сайт собирается заново (rodo site build)
+4_outputs/site/
+4_outputs/site_export/
+# PDF и HTML, собранные из .md, — по просьбе, не храним
+2_transcripts/**/*.pdf
+3_research/**/*.pdf

@@ -1,0 +1,9 @@
+{
+  "name": "ftree",
+  "version": "0.1.0",
+  "description": "Skills for keeping a family tree as Markdown cards with ftree-app: cards, dates, biographies, archives, photos, site, checks.",
+  "author": { "name": "Pavel Mikulik" },
+  "homepage": "https://github.com/esclkm/ftree-app",
+  "license": "MIT",
+  "skills": ["./.claude/skills/"]
+}

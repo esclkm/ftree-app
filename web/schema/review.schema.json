@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ftree-app.invalid/schema/review.schema.json",
+  "title": "Сверка — data/review.json",
+  "description": "Пары карточек для проверки руками: отмеченные в карточках (maybe_same, maybe_kin) и найденные автоматически (possible.auto: одно имя, та же фамилия или место, годы не спорят). Пары с проверенным «нет» (not_same, not_kin) сюда не попадают. Решение — командой (поле commands), сайт ничего не меняет.",
+  "type": "object",
+  "properties": {
+    "schema": {"const": "review/1"},
+    "pairs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source": {"enum": ["marked", "auto"], "description": "marked — подозрение записано в карточке; auto — нашёл скрипт."},
+          "type": {"enum": ["same", "kin"]},
+          "relation": {"type": "string", "description": "У kin: кем b приходится a (как в person.possible)."},
+          "a": {"$ref": "#/$defs/Side"},
+          "b": {"$ref": "#/$defs/Side"},
+          "reason": {"type": "string", "description": "На чём держится — строка из карточки (Markdown)."},
+          "why": {"type": "array", "items": {"type": "string"}, "description": "Что совпало (у найденных скриптом)."},
+          "commands": {
+            "type": "object",
+            "properties": {
+              "same": {"type": "string"},
+              "yes": {"type": "string"},
+              "no": {"type": "string"},
+              "mark": {"type": "string", "description": "У найденной скриптом: отметить «возможно» (possible.py maybe)."}
+            },
+            "required": ["same", "no"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["source", "type", "a", "b", "commands"],
+        "additionalProperties": false
+      }
+    },
+    "ruled_out": {"type": "integer", "description": "Сколько пар уже проверено — «нет»."}
+  },
+  "required": ["schema", "pairs", "ruled_out"],
+  "additionalProperties": false,
+  "$defs": {
+    "Side": {
+      "type": "object",
+      "properties": {
+        "person": {"$ref": "common.schema.json#/$defs/Id"},
+        "born": {"$ref": "common.schema.json#/$defs/Date"},
+        "birth_place": {"$ref": "common.schema.json#/$defs/Id"},
+        "died": {"$ref": "common.schema.json#/$defs/Date"},
+        "death_place": {"$ref": "common.schema.json#/$defs/Id"},
+        "parents": {"type": "array", "items": {"$ref": "common.schema.json#/$defs/Id"}},
+        "sources": {"type": "integer", "description": "Сколько источников у карточки."}
+      },
+      "required": ["person", "parents", "sources"],
+      "additionalProperties": false
+    }
+  }
+}

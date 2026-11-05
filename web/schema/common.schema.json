@@ -1,0 +1,355 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ftree-app.invalid/schema/common.schema.json",
+  "title": "Общие части данных сайта",
+  "description": "Кирпичики, из которых собраны человек, место и источник. Имена полей — как в GEDCOM X (FamilySearch), даты — как в GEDCOM 7; что откуда взято — web/schema/README.md.",
+  "$defs": {
+    "Id": {
+      "description": "Номер карточки в дереве (cr_id). Номер важнее имени: все связи — по нему.",
+      "type": "string",
+      "pattern": "^[a-z]{3}-[0-9]{3}-[a-z]{3}-[0-9]{3}$"
+    },
+    "Slug": {
+      "description": "Кусок адреса страницы латиницей: /people/<slug>. У тёзок разный (ivan-yasenev, ivan-yasenev-pfa).",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "Lang": {
+      "enum": [
+        "ru",
+        "pl",
+        "es",
+        "en"
+      ]
+    },
+    "LangText": {
+      "description": "Одна надпись на языках сайта. Русский обязателен — он основной; остальные, если есть.",
+      "type": "object",
+      "properties": {
+        "ru": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pl": {
+          "type": "string",
+          "minLength": 1
+        },
+        "es": {
+          "type": "string",
+          "minLength": 1
+        },
+        "en": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "ru"
+      ],
+      "additionalProperties": false
+    },
+    "Date": {
+      "description": "Дата, как в карточке (GEDCOM 7, шапка tools/scripts/dates.py). ru и sort считает сборщик, руками не пишутся.",
+      "type": "object",
+      "properties": {
+        "value": {
+          "description": "1935 · 1935-05 · 1935-05-12 · ABT/CAL/EST/BEF/AFT 1935 · BET 1941 AND 1945 · FROM 1941 TO 1945 · FROM 1944 · TO 1950",
+          "type": "string",
+          "pattern": "^((ABT|CAL|EST|BEF|AFT) )?[0-9]{4}(-[0-9]{2}(-[0-9]{2})?)?$|^BET [0-9]{4}(-[0-9]{2}(-[0-9]{2})?)? AND [0-9]{4}(-[0-9]{2}(-[0-9]{2})?)?$|^(FROM [0-9]{4}(-[0-9]{2}(-[0-9]{2})?)?)( TO [0-9]{4}(-[0-9]{2}(-[0-9]{2})?)?)?$|^TO [0-9]{4}(-[0-9]{2}(-[0-9]{2})?)?$"
+        },
+        "words": {
+          "description": "Слова источника рядом с датой: «осень», «до войны», «детство» (в GEDCOM 7 — PHRASE).",
+          "type": "string"
+        },
+        "os": {
+          "description": "Та же дата по старому стилю, как в документе («13.06.1888»): главная дата — по новому, эта показывается рядом мелко.",
+          "type": "string"
+        },
+        "calendar": {
+          "description": "Стиль, если дата до 14.02.1918 и он известен: julian — старый, gregorian — новый.",
+          "enum": [
+            "julian",
+            "gregorian"
+          ]
+        },
+        "ru": {
+          "description": "Как показать по-русски: «ок. 1935», «между 1941 и 1945».",
+          "type": "string"
+        },
+        "sort": {
+          "description": "Для сортировки: ГГГГММДД первого возможного дня.",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "value",
+        "ru",
+        "sort"
+      ],
+      "additionalProperties": false
+    },
+    "Confidence": {
+      "description": "Насколько уверены. Три слова и ничего больше (GEDCOM X: High / Medium / Low). Почему так — в reasoning.",
+      "enum": [
+        "high",
+        "normal",
+        "low"
+      ]
+    },
+    "Provenance": {
+      "description": "Откуда знаем: семья > найдено > чужое дерево > вывод проекта. Факт только из чужого дерева — подсказка для проверки.",
+      "enum": [
+        "family",
+        "found",
+        "other_tree",
+        "inference"
+      ]
+    },
+    "SourceRef": {
+      "description": "Ссылка на карточку источника и место в нём (GEDCOM X SourceReference).",
+      "type": "object",
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/Id"
+        },
+        "locator": {
+          "description": "Где именно: «стр. 12», «10:01», «58:04–58:27».",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source"
+      ],
+      "additionalProperties": false
+    },
+    "Fact": {
+      "description": "Одна строка «Факты (с источником)» карточки. Без источника факта нет — сборка остановится.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "Вид события, если он есть (как event_type в карточках событий).",
+          "enum": [
+            "birth",
+            "death",
+            "burial",
+            "marriage",
+            "divorce",
+            "residence",
+            "occupation",
+            "education",
+            "war",
+            "migration",
+            "name",
+            "custom"
+          ]
+        },
+        "label": {
+          "description": "Подпись строки, если это не дата: «Занятие», «Слова дословно».",
+          "type": "string"
+        },
+        "date": {
+          "$ref": "#/$defs/Date"
+        },
+        "place": {
+          "$ref": "#/$defs/Id"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Markdown; ссылки на людей, места и источники — по номеру: [подпись](person:<id>), (place:<id>), (source:<id>), файл — (media:<имя файла>). Адрес страницы строит приложение. Контакты и номера домов уже вырезаны."
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SourceRef"
+          },
+          "minItems": 1
+        },
+        "confidence": {
+          "$ref": "#/$defs/Confidence"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "reasoning": {
+          "description": "На чём держится вывод: «1919 − 70 = 1849», «по отчеству».",
+          "type": "string"
+        },
+        "tr": {
+          "description": "Перевод строки на языки сайта (3_research/tree/translations/<язык>/facts/<Имя карточки>.md). Нет языка — показываем русский.",
+          "type": "object",
+          "properties": {
+            "pl": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reasoning": {
+                  "type": "string"
+                },
+                "locators": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Места в источниках — по порядку sources."
+                },
+                "when": {
+                  "type": "string",
+                  "description": "Слова при дате на этом языке («desde fines de los 60»)."
+                }
+              },
+              "required": [
+                "text"
+              ],
+              "additionalProperties": false
+            },
+            "es": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reasoning": {
+                  "type": "string"
+                },
+                "locators": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Места в источниках — по порядку sources."
+                },
+                "when": {
+                  "type": "string",
+                  "description": "Слова при дате на этом языке («desde fines de los 60»)."
+                }
+              },
+              "required": [
+                "text"
+              ],
+              "additionalProperties": false
+            },
+            "en": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reasoning": {
+                  "type": "string"
+                },
+                "locators": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Места в источниках — по порядку sources."
+                },
+                "when": {
+                  "type": "string",
+                  "description": "Слова при дате на этом языке («desde fines de los 60»)."
+                }
+              },
+              "required": [
+                "text"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "text",
+        "sources",
+        "confidence",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "Media": {
+      "description": "Фото, скан, аудио или PDF. Закрытый (private) файл без входа не отдаётся — показываем заглушку, а не битую ссылку.",
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string",
+          "pattern": "^/"
+        },
+        "thumb": {
+          "type": "string",
+          "pattern": "^/"
+        },
+        "kind": {
+          "enum": [
+            "photo",
+            "scan",
+            "audio",
+            "pdf"
+          ]
+        },
+        "caption": {
+          "$ref": "#/$defs/LangText"
+        },
+        "date": {
+          "$ref": "#/$defs/Date"
+        },
+        "place": {
+          "$ref": "#/$defs/Id"
+        },
+        "private": {
+          "type": "boolean"
+        },
+        "region": {
+          "description": "Лицо на общем фото: доли ширины и высоты [x1, y1, x2, y2] (GEDCOM X RectangleRegion).",
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "minItems": 4,
+          "maxItems": 4
+        }
+      },
+      "required": [
+        "url",
+        "kind",
+        "private"
+      ],
+      "additionalProperties": false
+    },
+    "Identifiers": {
+      "description": "Номера человека в других системах (GEDCOM X identifiers).",
+      "type": "object",
+      "properties": {
+        "gedcom_id": {
+          "description": "Номер MyHeritage, @I12@ без @.",
+          "type": "string",
+          "pattern": "^I[0-9]+$"
+        },
+        "gramps_id": {
+          "type": "string"
+        },
+        "wikidata": {
+          "type": "string",
+          "pattern": "^Q[0-9]+$"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

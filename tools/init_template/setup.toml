@@ -1,0 +1,27 @@
+# Настройщик: как собрать рабочее место для этого дерева. Читает `rodo setup`: что можно — делает сам, что требует
+# человека — говорит, какой командой. Паролей здесь нет: они в Связке ключей, здесь только имена записей.
+
+# Откуда брать приложение (движок и сайт). «Разработка» — папка на диске: path = "<папка приложения>".
+# «Версия» — repo = "https://github.com/<кто>/ftree-app", tag = "v1.0", dir = "~/ftree-app".
+[app]
+path = "{app}"
+version = "{version}"            # с какой версией приложения работает дерево: rodo сверяет при каждом запуске
+
+# Папки этого Mac → ~/.config/ftree/env. Не задано — по умолчанию.
+[places]
+# archives = "~/archives"        # ARCHIVES_LOCAL — сырьё архивов, вне git и облака
+# site_out = "~/Sites/tree"      # FTREE_SITE_OUT — куда собирать сайт; по умолчанию 4_outputs/site
+
+# Что включено. Новое дерево начинает с минимума: включайте по мере надобности. Где хранить медиа и куда выкладывать
+# сайт — в ftree.toml ([storage.*], [[site.target]]).
+[features]
+telegram = false
+myheritage = false
+familysearch = false
+chrome = false
+asr = false
+photo_restore = false
+image_model = false
+llm = false
+
+[keychain]

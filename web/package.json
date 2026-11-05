@@ -1,0 +1,50 @@
+{
+  "name": "ftree-site",
+  "private": true,
+  "description": "Сайт родословной: приложение (src/app) и его сборщик (scripts/site.mjs) — из папки выгрузки (data/*.json по schema/, media/, files/, site.json) в готовый сайт и на хостинг",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit && oxlint --deny-warnings src/app/notes && vitest run --silent && vite build --config vite.app.config.ts",
+        "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "schema": "node scripts/schema-types.mjs",
+    "check-data": "node scripts/check-data.mjs",
+    "app": "vite --config vite.app.config.ts",
+    "build:app": "vite build --config vite.app.config.ts",
+    "lint": "oxlint",
+    "lint:notes": "oxlint --deny-warnings src/app/notes"
+  },
+  "dependencies": {
+    "@reduxjs/toolkit": "2.13.0",
+    "d3": "7.9.0",
+    "family-chart": "0.9.0",
+    "leaflet": "1.9.4",
+    "leaflet.markercluster": "1.5.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-markdown": "10.1.0",
+    "react-redux": "9.3.1",
+    "react-router": "8.5.1",
+    "remark-gfm": "4.0.1"
+  },
+  "devDependencies": {
+    "@types/d3": "7.4.3",
+    "@types/leaflet": "1.9.22",
+    "@types/leaflet.markercluster": "1.5.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "eslint-plugin-react": "^7.37.5",
+    "json-schema-to-typescript": "16.0.0",
+    "oxlint": "^1.90.0",
+    "sass": "1.107.1",
+    "typescript": "7.0.2",
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
+  },
+  "engines": {
+    "node": ">=26"
+  }
+}

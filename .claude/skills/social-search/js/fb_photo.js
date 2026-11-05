@@ -1,0 +1,1 @@
+(()=>{const m=document.querySelector("[role=main]");const s=[...m.querySelectorAll("svg[aria-label]")].filter(s=>s.querySelector("image")).sort((a,b)=>b.getBoundingClientRect().width-a.getBoundingClientRect().width)[0];return s?(s.getAttribute("aria-label")+"\t"+s.querySelector("image").getAttribute("xlink:href")):""})()

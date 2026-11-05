@@ -1,0 +1,11 @@
+{
+  "name": "ftree-app",
+  "owner": { "name": "Pavel Mikulik" },
+  "plugins": [
+    {
+      "name": "ftree",
+      "source": "./",
+      "description": "Skills for keeping a family tree with ftree-app (method only; each tree keeps its own notes)."
+    }
+  ]
+}

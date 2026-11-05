@@ -1,0 +1,6 @@
+// Телефон: всё, что уже 700 px
+$phone: 700px;
+// Круг без фото: цвет человека (класс c0…c7 ставит card.ts по его номеру), буквы — белые
+$ph-colors: #c0694e, #b58427, #6b8f47, #3a8d83, #5876b8, #8466b0, #b0567c, #75818c;
+@mixin ph-colors { @for $i from 1 through length($ph-colors) { &.c#{$i - 1} { background: nth($ph-colors, $i); color: #fff; } } }
+@mixin phone { @media (max-width: $phone) { @content; } }

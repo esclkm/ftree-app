@@ -1,0 +1,15 @@
+#!/bin/sh
+# Дерево на сайте MyHeritage ⇄ карточки — три команды без ИИ (подробно — шапки tools/scripts/myheritage_web.mjs и myheritage_plan.py).
+#   tools/mh pull          прочитать всё дерево с сайта и сравнить с карточками → список работ (plan_to_site.md)
+#   tools/mh push [--go]   выполнить список (без --go — только показать); ещё: --limit N, --only field|person, --work <номер>
+#   tools/mh status        что сделано сегодня, снимок, список, ошибки журнала
+#   tools/mh plan          только сравнить заново (по прежнему снимку, сеть не нужна)
+# Нужен Chrome проекта с входом Павла в MyHeritage: node tools/scripts/browser_cdp.mjs start https://www.myheritage.pl/family-trees
+ROOT=$(cd "$(dirname "$0")/.." && pwd)
+case "$1" in
+  pull)   node "$ROOT/tools/scripts/myheritage_web.mjs" collect && "$ROOT/tools/py" "$ROOT/tools/scripts/myheritage_plan.py" plan ;;
+  plan)   "$ROOT/tools/py" "$ROOT/tools/scripts/myheritage_plan.py" plan ;;
+  push)   shift; node "$ROOT/tools/scripts/myheritage_web.mjs" upload "$@" ;;
+  status) node "$ROOT/tools/scripts/myheritage_web.mjs" status ;;
+  *)      sed -n '2,7p' "$0"; exit 2 ;;
+esac

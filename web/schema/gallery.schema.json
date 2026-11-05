@@ -1,0 +1,215 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ftree-app.invalid/schema/gallery.schema.json",
+  "title": "Фото мест и времени — data/gallery.json",
+  "description": "Альбомы снимков из 1_sources/found/photos_places (по местам) и photos_history (по темам); подписи — из описей 00_ОПИСЬ*.md. Иллюстрации «как там было», а не фото родных.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "gallery/1"
+    },
+    "albums": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Album"
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "albums"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "Album": {
+      "type": "object",
+      "properties": {
+        "slug": {
+          "$ref": "common.schema.json#/$defs/Slug"
+        },
+        "names": {
+          "$ref": "common.schema.json#/$defs/LangText"
+        },
+        "kind": {
+          "enum": [
+            "place",
+            "theme"
+          ]
+        },
+        "place": {
+          "description": "Карточка места, если альбом — место.",
+          "$ref": "common.schema.json#/$defs/Id"
+        },
+        "about": {
+          "description": "Альбом событий: о ком и про что — одна-две фразы (Markdown) на языках сайта (tree/albums.toml).",
+          "$ref": "common.schema.json#/$defs/LangText"
+        },
+        "people": {
+          "description": "Кто связан с местом альбома и с местами внутри него (родился, жил, умер, упомянут в биографии); с портретом — первыми. У альбома событий — о ком он (tree/albums.toml).",
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/Id"
+          }
+        },
+        "photos": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Photo"
+          }
+        }
+      },
+      "required": [
+        "slug",
+        "names",
+        "kind",
+        "photos"
+      ],
+      "additionalProperties": false
+    },
+    "Photo": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string",
+          "pattern": "^/"
+        },
+        "thumb": {
+          "type": "string",
+          "pattern": "^/"
+        },
+        "year": {
+          "description": "Год для сортировки и десятилетия.",
+          "type": "integer"
+        },
+        "year_txt": {
+          "description": "Год, как в описи: «1930-е», «ок. 1915».",
+          "type": "string"
+        },
+        "desc": {
+          "description": "Что на снимке (Markdown).",
+          "type": "string"
+        },
+        "whose": {
+          "description": "Чья это история.",
+          "type": "string"
+        },
+        "exact": {
+          "description": "Насколько точно место.",
+          "type": "string"
+        },
+        "note": {
+          "description": "Под вопросом.",
+          "type": "string"
+        },
+        "source": {
+          "description": "Откуда снимок (Markdown).",
+          "type": "string"
+        },
+        "rights": {
+          "type": "string"
+        },
+        "link": {
+          "type": "string"
+        },
+        "section": {
+          "description": "Раздел описи (у тематических альбомов).",
+          "type": "string"
+        },
+        "era": {
+          "description": "Какое государство было там в тот год.",
+          "$ref": "common.schema.json#/$defs/LangText"
+        },
+        "like": {
+          "description": "«≈ похожее, не наше»: снята не наша деревня, а самая похожая рядом (опись — «Насколько точно», имя файла — <Настоящая>_похоже-на-<Наша>-<км>км_…). Метка — красная.",
+          "type": "object",
+          "properties": {
+            "real": {"description": "Где снято на самом деле.", "$ref": "common.schema.json#/$defs/LangText"},
+            "ours": {"description": "На какую нашу деревню похоже.", "$ref": "common.schema.json#/$defs/LangText"},
+            "ours_place": {"description": "Карточка нашей деревни.", "$ref": "common.schema.json#/$defs/Id"},
+            "km": {"description": "Сколько км от нашей.", "type": "integer"}
+          },
+          "additionalProperties": false
+        },
+        "addr": {
+          "description": "Снято по точному адресу (дом, больница, вуз) — карточка этого места.",
+          "$ref": "common.schema.json#/$defs/Id"
+        },
+        "tr": {
+          "description": "Перевод подписи (3_research/tree/translations/<язык>/photos/<имя файла>.md) — только если русская подпись с тех пор не менялась.",
+          "type": "object",
+          "properties": {
+            "pl": {
+              "type": "object",
+              "properties": {
+                "desc": {
+                  "type": "string"
+                },
+                "whose": {
+                  "type": "string"
+                },
+                "exact": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                },
+                "section": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "es": {
+              "type": "object",
+              "properties": {
+                "desc": {
+                  "type": "string"
+                },
+                "whose": {
+                  "type": "string"
+                },
+                "exact": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                },
+                "section": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "en": {
+              "type": "object",
+              "properties": {
+                "desc": {
+                  "type": "string"
+                },
+                "whose": {
+                  "type": "string"
+                },
+                "exact": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                },
+                "section": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "url",
+        "thumb"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

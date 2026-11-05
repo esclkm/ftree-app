@@ -1,0 +1,47 @@
+#!/bin/sh
+# Перед каждым коммитом: дерево без ошибок (иначе коммит не пройдёт). Обойти в крайнем случае: git commit --no-verify
+# Хуки лежат в приложении (tools/githooks), ставятся в репозиторий дерева (rodo hook install); команды — из приложения.
+APP=$(cd "$(dirname "$0")/../.." && pwd)
+RODO="$APP/tools/rodo"
+cd "$(git rev-parse --show-toplevel)" || exit 0
+# 0. медиа — не в git: картинка, PDF или звук в индексе — стоп. Новое на диске — в опись само, в этот же коммит;
+#    в облако его отправит post-commit, в фоне (раньше коммит вставал: «файл не в описи — media.py push»)
+"$RODO" media add && git add media/manifest.jsonl
+"$RODO" media check-staged || {
+  echo "✋ Коммит остановлен: медиа в индексе git — им место в описи. Убрать: git restore --staged <файл>"; exit 1; }
+# 1. переименованные в этом коммите файлы → поправить ссылки на них (история переездов — в самом git)
+"$RODO" moves fix-staged
+# переименованные заголовки биографий → ссылки на них; ветки, «Рассказ», каталог фото — пересчитать в этот коммит
+"$RODO" sync pre-commit || exit 1
+
+# Дальше — проверки только читают: идут одновременно, каждая в свой файл (по очереди было ~9 с, вместе — ~4 с)
+OUT=$(mktemp -d "${TMPDIR:-/tmp}/ftree-precommit.XXXXXX")
+trap 'rm -rf "$OUT"' EXIT
+STAGED=$(git diff --cached --name-only)
+run() {  # run <имя> <команда…> — вывод в $OUT/<имя>.txt, код выхода в $OUT/<имя>.code
+  name=$1; shift
+  ( "$@" >"$OUT/$name.txt" 2>&1; echo $? >"$OUT/$name.code" ) &
+}
+failed() { [ -f "$OUT/$1.code" ] && [ "$(cat "$OUT/$1.code")" -ne 0 ]; }
+
+run tree "$RODO" check-tree --quiet
+# 2. дубли фото, источников и фактов в карточках людей
+echo "$STAGED" | grep -q '^3_research/tree/people/' && run cards "$RODO" card-doctor --quiet
+# 3. карточки для MyHeritage: повтор gedcom_id, непонятная дата, человек уже есть на сайте под другим номером
+echo "$STAGED" | grep -q '^3_research/tree/' && run mh "$RODO" myheritage-update lint --quiet
+# 4. карточки для сайта: строка факта, источник ссылкой, эпохи мест, номера в свойствах биографий — иначе сайт не соберётся
+echo "$STAGED" | grep -q '^3_research/\|^tools/scripts/cards/' && run site "$RODO" check-cards --quiet
+run links "$RODO" check-links --quiet
+wait
+
+code=0
+failed tree && { echo "✋ Коммит остановлен: в дереве ошибки. Подробно: rodo check-tree"
+  cat "$OUT/tree.txt"; code=1; }
+failed cards && { echo "✋ Коммит остановлен: в карточках дубли. Починить: rodo card-doctor --fix, затем git add"
+  cat "$OUT/cards.txt"; code=1; }
+failed mh && { echo "✋ Коммит остановлен: карточки задвоят или потеряют людей на MyHeritage. Подробно: rodo myheritage-update lint"
+  cat "$OUT/mh.txt"; code=1; }
+failed site && { echo "✋ Коммит остановлен: карточки записаны так, что сайт не соберётся. Подробно: rodo check-cards"
+  cat "$OUT/site.txt"; code=1; }
+cat "$OUT/links.txt"   # ссылки — только отчёт, коммит не останавливают
+exit $code

@@ -1,0 +1,53 @@
+@use 'mixins' as *;
+@use 'tokens' as *;
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; font: 16px/1.6 var(--f-body); color: var(--on-surface); background: var(--surface); }
+a { color: var(--primary); text-decoration: none; &:hover { text-decoration: underline; } }
+.ic { width: 1.25em; height: 1.25em; fill: currentColor; flex: none; vertical-align: -.25em; }
+
+main { max-width: 1040px; margin: 0 auto; padding: 16px 16px 64px; }
+h1 { font: 600 30px/1.2 $serif; margin: 0 0 4px; }
+.page-title { margin: 12px 4px 12px; }
+h2 {
+  display: flex; align-items: center; gap: 10px; font: 700 18px/1.3 $serif; margin: 0 0 12px; color: var(--on-surface);
+  .ic { color: var(--primary); }
+}
+h3, h4, h5 { font-weight: 500; margin: 1.3em 0 .4em; }
+
+// таблицы «поле — значение»
+table { border-collapse: collapse; width: 100%; margin: .4em 0; }
+th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--surface-2); }
+tr:last-child th, tr:last-child td { border-bottom: 0; }
+table.kv th { width: 38%; color: var(--muted); font-weight: 400; }
+.prose {
+  overflow-x: auto;
+  table { font-size: .94em; }
+  table tr:first-child th { background: var(--surface-1); font-weight: 500; }
+  ul { padding-left: 1.2em; }
+  li { margin: .25em 0; }
+}
+.src { border-bottom: 1px dotted var(--muted); }
+:target { background: var(--hl); scroll-margin-top: 80px; border-radius: 6px; }
+
+// подсказка «тексты на русском» и всплывающее сообщение
+.ru-note { display: flex; align-items: center; gap: 10px; padding: 10px 16px; margin: 4px 0 0; border-radius: 12px; background: var(--secondary-container); color: var(--on-secondary-container); font-size: 14px; }
+#snack {
+  position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 120px); visibility: hidden; opacity: 0; background: #1f2620; color: #eef0ea;
+  padding: 14px 20px; border-radius: 8px; box-shadow: var(--shadow-2); font-size: 14px; transition: transform .25s; z-index: 3000;
+  &.on { transform: translate(-50%, 0); visibility: visible; opacity: 1; }
+}
+
+// телефон: меньше полей и отступов — тексту почти вся ширина экрана
+@include phone {
+  body { font-size: 15px; }
+  h1 { font-size: 24px; }
+  main { padding: 6px 6px 40px; }
+  h2 { margin-bottom: 8px; }
+  table.kv th { width: 32%; padding-left: 0; }
+  th, td { padding: 7px 6px; }
+  .prose ul { padding-left: 1em; }
+  .ru-note { margin: 2px 0 0; padding: 8px 12px; }
+  .page-title { margin: 8px 4px; }
+}

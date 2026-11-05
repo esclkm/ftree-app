@@ -1,0 +1,117 @@
+@use "mixins" as *;
+// фото: галерея, фото в тексте, фото мест и времени, альбомы, полоски
+.gallery {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px;
+  img { width: 100%; height: 160px; object-fit: cover; border-radius: 12px; background: var(--surface-2); display: block; transition: transform .2s; }
+  a:hover img { transform: scale(1.02); }
+}
+img.inl { max-width: 100%; max-height: 420px; display: block; margin: .6em 0; border-radius: 12px; }
+// снимки мест — как на странице «Деревни предков по годам»: карточка с рамкой, метка «наше / ≈ не наше», подпись,
+// мелкой моноширинной строкой — год и источник
+.ph-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 18px; }
+.ph-card {
+  margin: 0; background: var(--card); border: 1px solid var(--outline); border-radius: 6px; overflow: hidden; display: flex; flex-direction: column;
+  img { width: 100%; aspect-ratio: 4 / 3; height: auto; object-fit: cover; display: block; background: var(--outline); filter: saturate(.92); transition: transform .2s; }
+  a:hover img { transform: scale(1.03); }
+  > a { overflow: hidden; display: block; }
+  figcaption { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 7px; font-size: 13px; line-height: 1.45; color: var(--muted); }
+  .cap { color: var(--on-surface); font-size: 14.5px; }
+  .credit, .src-line { font-family: var(--f-mono); font-size: 11.5px; line-height: 1.4; color: var(--muted); word-break: break-word; }
+  .src-line b { font-weight: 400; }
+  .warn { color: var(--warn); }
+}
+// метка: золотая — то самое место, красная — самая похожая деревня рядом
+.ph-tag {
+  display: inline-flex; align-self: flex-start; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 10px;
+  font: 700 12.5px/1.35 var(--f-body); letter-spacing: .02em; color: var(--ours); background: var(--ours-bg);
+  &.like { color: var(--like); background: var(--like-bg); }
+}
+.ph-legend { display: flex; flex-wrap: wrap; gap: 10px 18px; margin: 0 0 12px; font-size: 14px; color: var(--muted); > span { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; } }
+// лента по срезам лет: слева крупные годы и государство тогда (липнут при прокрутке), справа снимки
+.ph-era {
+  display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 24px; padding-block: 24px; border-top: 1px solid var(--outline);
+  &:first-of-type, .ph-legend + & { border-top: 0; padding-top: 6px; }
+}
+.ph-era-head { position: sticky; top: 100px; align-self: start; }  // ниже шапки, даже когда она в две строки
+.ph-years { font: 30px/1.05 var(--f-mono); font-variant-numeric: tabular-nums; letter-spacing: -.01em; color: var(--on-surface); overflow-wrap: anywhere; }
+.ph-state { font: italic 15px/1.35 var(--f-display); color: var(--muted); margin-top: 6px; }
+// разделы с лентой — без подложки карточки: снимки в рамках прямо на фоне страницы
+.card.flat { background: none; box-shadow: none; padding-inline: 4px; }
+@include phone {
+  .ph-era { grid-template-columns: minmax(0, 1fr); gap: 12px; padding-block: 18px; }
+  .ph-era-head { position: static; }
+  .ph-years { font-size: 26px; }
+  .ph-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+}
+.albums { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+.album {
+  display: flex; flex-direction: column; background: var(--surface-1); border-radius: 14px; overflow: hidden; color: var(--on-surface); transition: box-shadow .2s;
+  &:hover { box-shadow: var(--shadow-2); text-decoration: none; }
+  img { width: 100%; height: 140px; object-fit: cover; display: block; }
+  > div { padding: 10px 12px; display: flex; flex-direction: column; }
+  > div > span { font-size: 13px; color: var(--muted); }
+  > div > .album-about { margin: 4px 0; color: var(--on-surface); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+}
+.docs {
+  .album > a { display: block; }
+  img { height: 180px; object-position: top; }
+  .doc-blank { height: 180px; display: flex; align-items: center; justify-content: center; background: var(--surface-2);
+    .ic { width: 48px; height: 48px; opacity: .4; } }
+  .doc-links { display: flex; gap: 14px; margin-top: 6px; a { display: inline-flex; align-items: center; gap: 4px; } .ic { width: 18px; height: 18px; } }
+}
+.strip-head { display: flex; align-items: center; gap: 8px; margin: 10px 0 6px; font-weight: 500; }
+.strip { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; img { height: 96px; width: auto; border-radius: 10px; display: block; } }
+
+// всплывающее фото
+.lb {
+  position: fixed; inset: 0; z-index: 2000; background: rgba(14, 18, 15, .94); display: none; align-items: center; justify-content: center;
+  &.on { display: flex; }
+  > img { max-width: 88vw; max-height: 74vh; margin-bottom: 70px; box-shadow: 0 4px 30px rgba(0, 0, 0, .5); border-radius: 6px; }
+  button { position: absolute; border: 0; color: #fff; font-size: 40px; line-height: 1; cursor: pointer; opacity: .85; &:hover { opacity: 1; } }
+  .lb-p, .lb-n { width: 56px; height: 56px; border-radius: 50%; background: rgba(255, 255, 255, .18); padding: 0 0 6px; &:hover { background: rgba(255, 255, 255, .32); } }
+  .lb-x { background: none; padding: 10px 16px; }
+  &.single .lb-p, &.single .lb-n, &.single .lb-t { display: none; }
+}
+.lb-x { top: 8px; right: 8px; }
+.lb-p { left: 14px; top: 45%; transform: translateY(-50%); }
+.lb-n { right: 14px; top: 45%; transform: translateY(-50%); }
+.lb-c { position: absolute; bottom: 12px; color: #ddd; font: 14px var(--f-body); }
+.lb-cap { position: absolute; bottom: 96px; left: 8%; right: 8%; text-align: center; color: #eef0ea; font: 15px/1.4 var(--f-body); }
+.lb.info {
+  // под фото — сведения о нём: снимок ниже и выше центра, сведения не длиннее четверти экрана, дальше — прокрутка
+  > img { max-height: 48vh; margin-bottom: 200px; }
+  .lb-cap { max-height: 26vh; overflow-y: auto; text-align: left; }
+}
+.lb-info { margin-top: 6px; font-size: 13px; color: #c9d1c6; > div { margin-top: 3px; } a { color: #9cc2d6; } .warn { color: #f3d28a; } }
+.lb-t {
+  position: absolute; bottom: 40px; left: 0; right: 0; display: flex; gap: 6px; justify-content: center; overflow-x: auto; padding: 0 12px;
+  img { width: 64px; height: 48px; object-fit: cover; border-radius: 4px; opacity: .5; cursor: pointer; flex: none; box-shadow: none; max-width: none; max-height: none; margin: 0; }
+  img.cur { opacity: 1; outline: 2px solid #fff; }
+}
+
+// плитка альбома: лица связанных с местом поверх снимка; подсказка «кто» — при наведении
+.album {
+  .cover { position: relative; margin: 0; }
+  .faces { position: absolute; left: 8px; bottom: 8px; }
+}
+.faces {
+  display: inline-flex; align-items: center; position: relative;
+  .face { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--card); object-fit: cover; margin-left: -8px; flex: none;
+    display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #fff; @include ph-colors;
+    &:first-child { margin-left: 0; } }
+  img.face { height: 30px; width: 30px; }
+  .more { background: var(--surface-2); color: var(--on-surface); }
+  .faces-tip { display: none; position: absolute; left: 0; bottom: calc(100% + 6px); z-index: 20; min-width: 200px; max-width: 280px;
+    padding: 8px 10px; border-radius: 10px; background: var(--card); color: var(--on-surface); box-shadow: var(--shadow-2);
+    flex-direction: column; gap: 2px; font-size: 13px; line-height: 1.35; white-space: normal;
+    b { font-weight: 600; margin-bottom: 2px; } }
+  &:hover .faces-tip, &:focus-within .faces-tip { display: flex; }
+}
+.hero .faces { margin-top: 8px; .faces-tip { bottom: auto; top: calc(100% + 6px); } }
+.period { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 14px;
+  .ic { width: 20px; height: 20px; fill: var(--primary, currentColor); }
+  select { font: 14px var(--f-body); padding: 4px 8px; border: 1px solid var(--outline); border-radius: 8px; background: var(--card); }
+  button.btn { border: 0; cursor: pointer; font: inherit; font-size: 13px; padding: 5px 12px; }
+  @include phone { gap: 6px 8px; font-size: 14px; > b { display: none; } select { padding: 4px 4px; } } }
+// подсказка длиннее снимка — плитка её не обрезает
+.album { overflow: visible; position: relative; &:hover { z-index: 5; } .cover img { border-radius: 14px 14px 0 0; } }

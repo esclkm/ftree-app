@@ -1,0 +1,352 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ftree-app.invalid/schema/index.schema.json",
+  "title": "Общий список — data/index.json",
+  "description": "Лёгкий список всех для поиска, дерева, «кем приходится» и карты. Заменяет tree_data.js, kin_data.js и map_data.js: один человек — одна запись, разводы — один раз. Всё подробное — в файле человека.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "index/1"
+    },
+    "built": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "start": {
+      "description": "С кого открывается дерево.",
+      "$ref": "common.schema.json#/$defs/Id"
+    },
+    "people": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "common.schema.json#/$defs/Id"
+          },
+          "slug": {
+            "$ref": "common.schema.json#/$defs/Slug"
+          },
+          "names": {
+            "$ref": "common.schema.json#/$defs/LangText"
+          },
+          "sex": {
+            "enum": [
+              "M",
+              "F"
+            ]
+          },
+          "life": {
+            "description": "Годы для подписи: «1902–1986», «1921–?».",
+            "type": "string"
+          },
+          "tree": {
+            "enum": [
+              "pavel",
+              "vika",
+              "argentina"
+            ]
+          },
+          "lineage": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "avatar": {
+            "type": "string",
+            "pattern": "^/"
+          },
+          "parents": {
+            "type": "array",
+            "items": {
+              "$ref": "common.schema.json#/$defs/Id"
+            },
+            "maxItems": 2
+          },
+          "spouses": {
+            "type": "array",
+            "items": {
+              "$ref": "common.schema.json#/$defs/Id"
+            }
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "common.schema.json#/$defs/Id"
+            }
+          },
+          "stats": {
+            "description": "Сколько материала — значки на карточке.",
+            "type": "object",
+            "properties": {
+              "bio": {
+                "type": "boolean"
+              },
+              "texts": {
+                "type": "integer"
+              },
+              "facts": {
+                "type": "integer"
+              },
+              "fam": {
+                "type": "integer"
+              },
+              "web": {
+                "type": "integer"
+              },
+              "tree": {
+                "type": "integer"
+              },
+              "pics": {
+                "type": "integer"
+              },
+              "langs": {
+                "type": "array",
+                "items": {
+                  "$ref": "common.schema.json#/$defs/Lang"
+                }
+              }
+            },
+            "required": [
+              "bio",
+              "texts",
+              "facts",
+              "fam",
+              "web",
+              "tree",
+              "pics",
+              "langs"
+            ],
+            "additionalProperties": false
+          },
+          "initials": {
+            "description": "Инициалы для круга без фото, по языкам («СМ»); у неизвестного — null (рисуем значок).",
+            "oneOf": [
+              {
+                "$ref": "common.schema.json#/$defs/LangText"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "color": {
+            "description": "Цвет круга без фото, 0–7 — всегда один для человека (от номера).",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 7
+          },
+          "marriage": {
+            "description": "От какого брака родителей ребёнок: 0 — один брак, 1, 2 … — номер (цвет линий на дереве).",
+            "type": "integer",
+            "minimum": 0
+          },
+          "kinship": {
+            "description": "Насколько связь с деревом доказана (поле kinship карточки): proven — документом, likely — вероятно, possible — возможно, unlikely — маловероятно, no — не родня. Нет поля в карточке — оценка по фактам (cards/kinship.py). В дереве — цвет рамки карточки.",
+            "enum": ["proven", "likely", "possible", "unlikely", "no"]
+          },
+          "kinship_by": {
+            "description": "Откуда уровень kinship: card — поставлен в карточке, facts — оценён по фактам и источникам.",
+            "enum": ["card", "facts"]
+          },
+          "unknown": {
+            "description": "Имя неизвестно («Unknown …»): в дереве есть, в списках и поиске — нет.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "names",
+          "sex",
+          "life",
+          "parents",
+          "spouses",
+          "children"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "divorces": {
+      "description": "Разведённые пары: «id1|id2» (по алфавиту) → год или пусто.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "places": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "common.schema.json#/$defs/Id"
+          },
+          "slug": {
+            "$ref": "common.schema.json#/$defs/Slug"
+          },
+          "names": {
+            "$ref": "common.schema.json#/$defs/LangText"
+          },
+          "lat": {
+            "type": "number"
+          },
+          "lng": {
+            "type": "number"
+          },
+          "people": {
+            "description": "Сколько людей связано с местом.",
+            "type": "integer"
+          },
+          "type": {
+            "enum": [
+              "country",
+              "region",
+              "district",
+              "city",
+              "town",
+              "village",
+              "locality",
+              "street",
+              "house",
+              "cemetery",
+              "church",
+              "hospital",
+              "school",
+              "university",
+              "river",
+              "other"
+            ]
+          },
+          "parent": {
+            "$ref": "common.schema.json#/$defs/Id"
+          },
+          "house": {
+            "description": "Только у дома — для раздела «Дома» на карте.",
+            "type": "object",
+            "properties": {
+              "kind": {
+                "description": "Что за жильё: private — свой дом, apartment — квартира, barrack — барак, dorm — общежитие, hut — хата, изба (надписи — house_<вид>).",
+                "enum": [
+                  "private",
+                  "apartment",
+                  "barrack",
+                  "dorm",
+                  "hut"
+                ]
+              },
+              "from": {
+                "type": "integer"
+              },
+              "to": {
+                "type": "integer"
+              },
+              "residents": {
+                "description": "Сколько людей в нём жило (по событиям).",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "residents"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "names",
+          "people"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "common.schema.json#/$defs/Id"
+          },
+          "slug": {
+            "$ref": "common.schema.json#/$defs/Slug"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titles": {
+            "description": "Название на других языках (3_research/tree/translations/<язык>/sources/<Имя карточки>.md); нет — русское.",
+            "type": "object",
+            "properties": {
+              "pl": {
+                "type": "string",
+                "minLength": 1
+              },
+              "es": {
+                "type": "string",
+                "minLength": 1
+              },
+              "en": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": false
+          },
+          "provenance": {
+            "$ref": "common.schema.json#/$defs/Provenance"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "title",
+          "provenance"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "branches": {
+      "description": "Ветки рода по числу людей; «Без ветки» — последней.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "description": "Как в lineage карточек.",
+            "type": "string"
+          },
+          "slug": {
+            "$ref": "common.schema.json#/$defs/Slug"
+          },
+          "names": {
+            "$ref": "common.schema.json#/$defs/LangText"
+          },
+          "people": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "key",
+          "slug",
+          "names",
+          "people"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "built",
+    "start",
+    "people",
+    "divorces",
+    "places",
+    "sources",
+    "branches"
+  ],
+  "additionalProperties": false
+}

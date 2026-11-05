@@ -1,0 +1,137 @@
+#!/bin/sh
+# rodo — одна команда для работы с деревом: из любой папки, без ИИ. Каждая подкоманда зовёт готовый скрипт проекта.
+#   rodo <скрипт> …            любой скрипт из tools/scripts по имени: rodo check-cards = check_cards.py,
+#                              rodo tree who … = tree.py who …; .mjs — через node, .sh — через sh
+#   rodo list                  все скрипты, которые можно звать по имени
+#   rodo check                 все проверки дерева разом, как на GitHub (tools/ci.sh)
+#   rodo test [аргументы]      тесты скриптов (unittest, tools/scripts/tests)
+#   rodo setup [--check|--short|--non-interactive|--yes]  рабочее место по setup/setup.toml: проверить, поставить, что
+#                              можно, и сказать, что сделать человеку (tools/scripts/setup.py); rodo doctor = --check
+#   rodo init <папка>          новое пустое дерево: этажи, ftree.toml, setup/, git и хук (tree_init.py)
+#   rodo import gedcom <файл>  чужое дерево GEDCOM → карточки (в пустое дерево) или отчёт и maybe_same (в живое);
+#                              --dry-run — только показать (import_gedcom.py)
+#   rodo update                обновить всё производное: ветки, «Рассказ», каталог фото, ссылки (update_all.py)
+#   rodo site export           выгрузка для сайта: карточки → 4_outputs/site_export (site_export.py)
+#   rodo site build            сайт из выгрузки → 4_outputs/site (web/scripts/site.mjs; карточек не читает)
+#   rodo site publish          собрать из выгрузки и выложить; mirror — зеркало для Беларуси (Netlify)
+#   rodo site all              выгрузка + сборка + выкладка (это делает хук после push в master)
+#   rodo mh <команда> …        дерево на MyHeritage: pull|plan|push|status (tools/mh)
+#   rodo sync [status|…]       что отстало от исходников: переводы, выкладка (sync.py; без слов — status)
+#   rodo hook install          включить хуки git проекта (core.hooksPath = tools/githooks)
+#   rodo hook pre-commit|post-commit   запустить хук git вручную; rodo hook <другое> — хуки Claude (hook.py)
+#   rodo link                  положить rodo в ~/.local/bin, чтобы звать просто «rodo»
+#
+# Имя скрипта — через дефис (так пишем в документах): check-cards, update-all. Подчёркивание и окончание .py тоже
+# понимаются: rodo check_cards, rodo check_cards.py — то же самое. Папка, откуда зовут, не меняется: пути в
+# аргументах — от неё. Старый вызов tools/py tools/scripts/x.py работает как раньше.
+SELF=$(realpath "$0" 2>/dev/null || echo "$0")
+ROOT=$(cd "$(dirname "$SELF")/.." && pwd)
+PY="$ROOT/tools/py"
+S="$ROOT/tools/scripts"
+usage() { sed -n '2,24p' "$SELF" | sed 's/^# \{0,1\}//'; exit "${1:-2}"; }
+
+# Корень дерева (папка с ftree.toml) — как в paths.find_root: FTREE_ROOT; вверх от текущей папки; FTREE_ROOT из файла
+# ~/.config/ftree/env. Нужен, чтобы найти скрипты самого дерева (книги о его людях — tools/scripts в данных, строки
+# «tree» в tools/APP_MANIFEST) и поставить хуки git в его репозиторий. Нет дерева — пусто.
+tree_root() {
+  [ -n "${FTREE_ROOT:-}" ] && { echo "$FTREE_ROOT"; return; }
+  d=$(pwd)
+  while [ "$d" != "/" ]; do [ -f "$d/ftree.toml" ] && { echo "$d"; return; }; d=$(dirname "$d"); done
+  f=${FTREE_ENV_FILE:-$HOME/.config/ftree/env}
+  [ -f "$f" ] && sed -n 's/^\(export \)\{0,1\}FTREE_ROOT=//p' "$f" | tail -1 | sed "s/^[\"']//; s/[\"']\$//; s#^~#$HOME#"
+}
+TREE=$(tree_root)
+# Найденное дерево — всем, кого rodo позовёт дальше: ci.sh, хуки и скрипты могут сменить папку, а после этого поиск
+# «вверх от текущей папки» уже не найдёт дерево, из которого звали
+[ -n "$TREE" ] && [ -f "$TREE/ftree.toml" ] && export FTREE_ROOT="$TREE"
+TS=""   # скрипты дерева, если это не та же папка, что скрипты приложения
+[ -n "$TREE" ] && [ -d "$TREE/tools/scripts" ] && [ "$(cd "$TREE/tools/scripts" && pwd)" != "$S" ] && TS="$TREE/tools/scripts"
+
+# Версия: данные пишут, с какой версией приложения работают ([app] version в setup/setup.toml дерева, например
+# "0.1.0"). Приложение старее — или другой серии (до 1.0 серия — первые две цифры: 0.1 и 0.2 несовместимы, потом —
+# первая) — предупредить и работать дальше: решает человек. Молча — RODO_NO_VERSION_CHECK=1.
+app_version() { awk -F'"' '/^version[ \t]*=/{print $2; exit}' "$ROOT/pyproject.toml"; }
+series() { case "$1" in 0.*) echo "$1" | cut -d. -f1-2 ;; *) echo "$1" | cut -d. -f1 ;; esac; }
+check_version() {
+  [ -z "${RODO_NO_VERSION_CHECK:-}" ] && [ -n "$TREE" ] && [ -f "$TREE/setup/setup.toml" ] || return 0
+  need=$(awk -F'"' '/^\[/{s=($0=="[app]")} s && /^version[ \t]*=/{print $2; exit}' "$TREE/setup/setup.toml")
+  have=$(app_version)
+  [ -n "$need" ] && [ -n "$have" ] || return 0
+  older=$(printf '%s\n%s\n' "$need" "$have" | sort -V | head -1)
+  if [ "$older" != "$need" ]; then
+    echo "⚠️  rodo: дереву нужно приложение ftree-app $need или новее, а здесь $have ($ROOT)." \
+         "Обновить: git -C \"$ROOT\" pull (или тег v$need); где приложение — [app] в setup/setup.toml дерева" >&2
+  elif [ "$(series "$need")" != "$(series "$have")" ]; then
+    echo "⚠️  rodo: приложение $have новее серии, с которой работало дерево ($need): прочитать, что поменялось" \
+         "(CHANGELOG / git log), прогнать rodo check и поднять [app] version в setup/setup.toml дерева" >&2
+  fi
+}
+check_version
+
+# все скрипты, которые зовутся по имени: имя через дефис
+list() {
+  for f in "$S"/*.py "$S"/*.mjs "$S"/*.sh ${TS:+"$TS"/*.py}; do
+    [ -f "$f" ] || continue
+    n=$(basename "$f"); n=${n%.*}
+    case "$n" in _*|__*) continue ;; esac
+    echo "$n" | tr _ -
+  done | sort -u
+}
+
+# скрипт по имени: дефис → подчёркивание, хвост .py/.mjs/.sh отбросить
+run_script() {
+  name=$(echo "$1" | sed -E 's/\.(py|mjs|sh)$//' | tr - _); shift
+  case "$name" in */*|"") return 1 ;; esac
+  if   [ -f "$S/$name.py" ];  then exec "$PY" "$S/$name.py" "$@"
+  elif [ -f "$S/$name.mjs" ]; then exec node "$S/$name.mjs" "$@"
+  elif [ -f "$S/$name.sh" ];  then exec sh "$S/$name.sh" "$@"
+  elif [ -n "$TS" ] && [ -f "$TS/$name.py" ]; then   # скрипт дерева: библиотеки — из приложения
+    PYTHONPATH="$S${PYTHONPATH:+:$PYTHONPATH}" exec "$PY" "$TS/$name.py" "$@"
+  fi
+  return 1
+}
+
+cmd=$1; [ $# -gt 0 ] && shift
+case "$cmd" in
+  check)   exec sh "$ROOT/tools/ci.sh" "$@" ;;
+  test)    exec "$PY" -m unittest discover -s "$S/tests" "$@" ;;
+  doctor)  exec "$PY" "$S/setup.py" --check "$@" ;;
+  update)  exec "$PY" "$S/update_all.py" "$@" ;;
+  init)    exec "$PY" "$S/tree_init.py" "$@" ;;
+  import)
+    case "$1" in
+      gedcom) shift; exec "$PY" "$S/import_gedcom.py" "$@" ;;
+      *)      echo "rodo import gedcom <файл.ged> [--dry-run] [--create]"; exit 2 ;;
+    esac ;;
+  mh)      exec sh "$ROOT/tools/mh" "$@" ;;
+  sync)    exec "$PY" "$S/sync.py" "${@:-status}" ;;
+  list)    list; exit 0 ;;
+  site)
+    # выгрузка (движок, читает карточки) → папка JSON; сборка и выкладка (web/scripts/site.mjs) берут только её
+    sub=$1; [ $# -gt 0 ] && shift
+    case "$sub" in
+      export)            exec "$PY" "$S/site_export.py" "$@" ;;
+      build|publish|mirror)
+        command -v node >/dev/null 2>&1 || { [ -s "$HOME/.nvm/nvm.sh" ] && . "$HOME/.nvm/nvm.sh"; }
+        exec node "$ROOT/web/scripts/site.mjs" "$sub" --data "$("$PY" "$S/paths.py" SITE_EXPORT)" \
+          --out "$("$PY" "$S/paths.py" SITE)" "$@" ;;
+      all)               exec sh "$S/publish_site.sh" "$@" ;;
+      *)  echo "rodo site export | build | publish | mirror | all   (all — выгрузка и выкладка подряд, как хук после push)"; exit 2 ;;
+    esac ;;
+  hook)
+    case "$1" in
+      # хуки — в приложении, ставятся в репозиторий дерева: приложение внутри данных — путь от корня, иначе полный
+      install)     [ -n "$TREE" ] || { echo "rodo hook install: нет дерева (ftree.toml) — позвать из его папки"; exit 2; }
+                   hp="$ROOT/tools/githooks"; [ "$ROOT" = "$(cd "$TREE" && pwd)" ] && hp=tools/githooks
+                   git -C "$TREE" config core.hooksPath "$hp" && echo "Хуки git: $hp"; exit $? ;;
+      pre-commit)  cd "$TREE" && exec sh "$ROOT/tools/githooks/pre-commit" ;;
+      post-commit) cd "$TREE" && exec sh "$ROOT/tools/githooks/post-commit" ;;
+      "")          echo "rodo hook install | pre-commit | post-commit (сейчас core.hooksPath = $(git -C "${TREE:-.}" config core.hooksPath || echo 'не задан')); rodo hook <after-edit|session|…> — hook.py"; exit 2 ;;
+      *)           exec "$PY" "$S/hook.py" "$@" ;;
+    esac ;;
+  link)
+    mkdir -p "$HOME/.local/bin" && ln -sf "$ROOT/tools/rodo" "$HOME/.local/bin/rodo" && echo "rodo → $HOME/.local/bin/rodo"
+    case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) echo "Папки ~/.local/bin нет в PATH: добавьте в ~/.zshrc строку  export PATH=\"\$HOME/.local/bin:\$PATH\"" ;; esac ;;
+  ""|-h|--help|help) usage 0 ;;
+  *) run_script "$cmd" "$@"; echo "rodo: нет команды или скрипта «$cmd». Все скрипты — rodo list"; usage ;;
+esac

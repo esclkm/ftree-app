@@ -1,0 +1,42 @@
+// Цвета, тени и шрифты — переменные CSS (их видит и код дерева). Палитра — со страницы «Деревни предков по годам»:
+// зеленовато-серый фон, тёмные чернила, сине-серые ссылки; «наше» — золото, «≈ не наше» — красный.
+// Тёмная тема — по настройке системы; выбор в «Настройках» ставит data-theme и data-tree на <html> (app/theme.ts).
+@mixin light {
+  --primary: #3f5d6e; --on-primary: #fff; --primary-container: #d7e3e8; --on-primary-container: #14303d;
+  --secondary-container: #e3e8dc; --on-secondary-container: #26301f;
+  --surface: #eef0ea; --surface-1: #f1f3ed; --surface-2: #e2e6dd; --card: #f8f9f5;
+  --on-surface: #1f2620; --muted: #5a6559; --outline: #cfd5cb;
+  --ours: #8a6a1f; --ours-bg: #f1e6c8; --like: #a3352b; --like-bg: #f5dcd8;
+  --warn: #6b4e00; --warn-bg: #fff0c7; --hl: #fff3c4;
+  --male: #4d6f9c; --female: #a2536f;
+  --path: #d6336c;  // путь родства на дереве — не похож ни на один цвет браков (links.ts, MCOL)
+  --map-dot: #8c4f2b;  // точка и группа точек на карте (MapPage.tsx) — на светлой и тёмной подложке OpenStreetMap одна
+  --shadow: 0 1px 2px rgba(30, 40, 30, .10), 0 2px 6px 1px rgba(30, 40, 30, .06);
+  --shadow-2: 0 2px 4px rgba(30, 40, 30, .12), 0 6px 16px 2px rgba(30, 40, 30, .10);
+  color-scheme: light;
+}
+@mixin dark {
+  --primary: #9cc2d6; --on-primary: #10232d; --primary-container: #26404d; --on-primary-container: #d5e7f0;
+  --secondary-container: #2c362d; --on-secondary-container: #dfe6da;
+  --surface: #151a16; --surface-1: #1a201b; --surface-2: #2a322b; --card: #1d231e;
+  --on-surface: #e4e8e1; --muted: #9ba69a; --outline: #323b33;
+  --ours: #e0b95a; --ours-bg: #3a3020; --like: #f0897c; --like-bg: #3d2320;
+  --warn: #f3d28a; --warn-bg: #3a3020; --hl: #3a3020;
+  --male: #6f8fbd; --female: #bf7590;
+  --path: #f06595;
+  --map-dot: #8c4f2b;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .40), 0 2px 6px 1px rgba(0, 0, 0, .25);
+  --shadow-2: 0 2px 4px rgba(0, 0, 0, .45), 0 6px 16px 2px rgba(0, 0, 0, .35);
+  color-scheme: dark;
+}
+:root {
+  @include light;
+  --f-display: "PT Serif", Georgia, "Times New Roman", serif;
+  --f-body: "PT Sans", "Helvetica Neue", Arial, sans-serif;
+  --f-mono: "PT Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { @include dark; } }
+:root[data-theme="dark"] { @include dark; }
+// «Дерево всегда светлое» (Настройки): при тёмной теме дерево остаётся в светлых цветах
+:root[data-tree="light"] #tree-app { @include light; color: var(--on-surface); }
+$serif: var(--f-display);

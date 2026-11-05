@@ -1,0 +1,654 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ftree-app.invalid/schema/person.schema.json",
+  "title": "Человек — data/people/<id>.json",
+  "description": "Всё, что показывает страница одного человека. Собирается из карточки 3_research/tree/people/<Имя>.md и его биографии. Связи — отдельными записями, как Relationship в GEDCOM X.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "person/1"
+    },
+    "id": {
+      "$ref": "common.schema.json#/$defs/Id"
+    },
+    "slug": {
+      "$ref": "common.schema.json#/$defs/Slug"
+    },
+    "identifiers": {
+      "$ref": "common.schema.json#/$defs/Identifiers"
+    },
+    "tree": {
+      "description": "Чьё дерево.",
+      "enum": [
+        "pavel",
+        "vika",
+        "argentina"
+      ]
+    },
+    "names": {
+      "type": "object",
+      "properties": {
+        "display": {
+          "description": "Как подписан человек на сайте, по языкам (name карточки + латиница).",
+          "$ref": "common.schema.json#/$defs/LangText"
+        },
+        "home": {
+          "description": "Как его звали дома: «дед Прокоп». Как сказано — не исправляем.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "aliases": {
+          "description": "Другие написания: в документах, у родни за границей.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "surname_inferred": {
+          "description": "Фамилия выведена, а не взята из документа.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "display"
+      ],
+      "additionalProperties": false
+    },
+    "sex": {
+      "enum": [
+        "M",
+        "F"
+      ]
+    },
+    "born": {
+      "$ref": "#/$defs/LifeEvent"
+    },
+    "died": {
+      "$ref": "#/$defs/LifeEvent"
+    },
+    "occupation": {
+      "type": "string"
+    },
+    "occupation_tr": {
+      "description": "«Занятие» на других языках (translations/<язык>/facts/<Имя карточки>.md).",
+      "type": "object",
+      "properties": {
+        "pl": {
+          "type": "string",
+          "minLength": 1
+        },
+        "es": {
+          "type": "string",
+          "minLength": 1
+        },
+        "en": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "relationships": {
+      "description": "Все связи, где он участвует. parent — кто родитель, child — чей ребёнок; couple — супруги.",
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "parent-child"
+              },
+              "parent": {
+                "$ref": "common.schema.json#/$defs/Id"
+              },
+              "child": {
+                "$ref": "common.schema.json#/$defs/Id"
+              }
+            },
+            "required": [
+              "type",
+              "parent",
+              "child"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "couple"
+              },
+              "person1": {
+                "$ref": "common.schema.json#/$defs/Id"
+              },
+              "person2": {
+                "$ref": "common.schema.json#/$defs/Id"
+              },
+              "divorced": {
+                "description": "Развод; true — был, года не знаем.",
+                "oneOf": [
+                  {
+                    "$ref": "common.schema.json#/$defs/Date"
+                  },
+                  {
+                    "const": true
+                  }
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "person1",
+              "person2"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "possible": {
+      "description": "Возможные связи — подозрение, не доказано: «возможно, тот же человек» (maybe_same) и «возможно, родня» (maybe_kin) из карточки, с обеих сторон. На дереве не рисуются. Проверенное «нет» (not_same, not_kin) сюда не попадает.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "enum": [
+              "same",
+              "kin"
+            ],
+            "description": "same — возможно, это один человек; kin — возможно, родня."
+          },
+          "person": {
+            "$ref": "common.schema.json#/$defs/Id"
+          },
+          "relation": {
+            "enum": [
+              "parent",
+              "child",
+              "sibling",
+              "pibling",
+              "nibling",
+              "cousin",
+              "grandparent",
+              "grandchild",
+              "spouse",
+              "kin"
+            ],
+            "description": "У kin: кем person приходится этому человеку (pibling — дядя или тётя, nibling — племянник или племянница). Пол — у person."
+          },
+          "reason": {
+            "type": "string",
+            "description": "На чём держится — строка из карточки (Markdown)."
+          }
+        },
+        "required": [
+          "type",
+          "person"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "research": {
+      "description": "Наша работа с человеком, а не он сам.",
+      "type": "object",
+      "properties": {
+        "priority": {
+          "enum": [
+            "P1",
+            "P2",
+            "P3",
+            "P4"
+          ]
+        },
+        "lineage": {
+          "description": "Ветки по крови. Считает assign_lineage.py.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "lineage_by_marriage": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "direct_ancestor": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "facts": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/Fact"
+      }
+    },
+    "biography": {
+      "description": "Биография: русский текст и переводы (Markdown), линия жизни — отдельно. Контакты и адреса уже вычищены.",
+      "type": "object",
+      "properties": {
+        "file": {
+          "description": "Откуда: путь к .md биографии в проекте.",
+          "type": "string"
+        },
+        "lifeline": {
+          "description": "Таблица «Линия жизни» — только жизнь самого человека.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LifelineRow"
+          }
+        },
+        "memory": {
+          "description": "Таблица «Память» — что было после смерти: вещи в музее, книга или статья о нём, перезахоронение, мемориальная доска, посмертная реабилитация. Те же строки, что у линии жизни.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LifelineRow"
+          }
+        },
+        "recollections": {
+          "description": "«Воспоминания» — сценки, которые кто-то помнит о человеке: кто вспоминает, откуда и что. Из текста биографии раздел убран.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Recollection"
+          }
+        },
+        "questions": {
+          "description": "«Открытые вопросы» биографии — Markdown, ссылки по номеру; на сайте свёрнутым блоком. Из текста биографии раздел убран.",
+          "type": "string"
+        },
+        "texts": {
+          "type": "object",
+          "properties": {
+            "ru": {
+              "$ref": "#/$defs/BioText"
+            },
+            "pl": {
+              "$ref": "#/$defs/BioText"
+            },
+            "es": {
+              "$ref": "#/$defs/BioText"
+            },
+            "en": {
+              "$ref": "#/$defs/BioText"
+            }
+          },
+          "required": [
+            "ru"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "file",
+        "lifeline",
+        "texts"
+      ],
+      "additionalProperties": false
+    },
+    "stays": {
+      "description": "Где жил и в каком государстве это было тогда (считается из фактов и эпох мест).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "place": {
+            "$ref": "common.schema.json#/$defs/Id"
+          },
+          "from": {
+            "type": "integer"
+          },
+          "to": {
+            "type": "integer"
+          },
+          "event": {
+            "type": "string",
+            "description": "Что это за точка: ev_birth, ev_residence, ev_child, ev_death … (надписи — I18N_ROWS)."
+          },
+          "state": {
+            "$ref": "common.schema.json#/$defs/LangText"
+          }
+        },
+        "required": [
+          "place",
+          "from",
+          "to",
+          "event"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "homes": {
+      "description": "Дома, где человек жил (жильцы домов — place.residents), по году.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "place": {
+            "$ref": "common.schema.json#/$defs/Id"
+          },
+          "date": {
+            "$ref": "common.schema.json#/$defs/Date"
+          },
+          "what": {
+            "enum": [
+              "ev_residence",
+              "pp_born"
+            ]
+          }
+        },
+        "required": [
+          "place",
+          "what"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "media": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/Media"
+      }
+    },
+    "avatar": {
+      "$ref": "common.schema.json#/$defs/Media"
+    },
+    "documents": {
+      "description": "Его документы (2_transcripts/documents): паспорт, трудовая, метрики… Закрытые (access: closed) сюда не попадают.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Document"
+      }
+    },
+    "sources": {
+      "description": "Все источники о нём (sources карточки).",
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/Id"
+      }
+    },
+    "mentioned_in": {
+      "description": "Где он упоминается: чужие биографии, расшифровки.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "person": {
+            "$ref": "common.schema.json#/$defs/Id"
+          }
+        },
+        "required": [
+          "title",
+          "url"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "life_photos": {
+      "description": "Фото мест из жизни: снимки мест и адресов, где он был, — из тех лет, когда он там был (site_export.life_photos).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "names": {
+            "$ref": "common.schema.json#/$defs/LangText"
+          },
+          "place": {
+            "$ref": "common.schema.json#/$defs/Id"
+          },
+          "album": {
+            "$ref": "common.schema.json#/$defs/Slug"
+          },
+          "photos": {
+            "type": "array",
+            "items": {
+              "$ref": "gallery.schema.json#/$defs/Photo"
+            }
+          }
+        },
+        "required": [
+          "names",
+          "photos"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "life_photos_other": {
+      "description": "Адреса, где снимки есть, но не из его лет — ссылкой на место.",
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/Id"
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "id",
+    "slug",
+    "names",
+    "sex",
+    "relationships",
+    "facts",
+    "sources"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "Document": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "titles": {
+          "description": "Название на других языках (3_research/tree/translations/<язык>/<sources|documents>/…); нет — русское.",
+          "type": "object",
+          "properties": {
+            "pl": {
+              "type": "string",
+              "minLength": 1
+            },
+            "es": {
+              "type": "string",
+              "minLength": 1
+            },
+            "en": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        "kind": {
+          "description": "Вид документа (documents.py, KINDS).",
+          "enum": [
+            "metrics",
+            "civil",
+            "passport",
+            "labor",
+            "military",
+            "education",
+            "awards",
+            "personal",
+            "certificate",
+            "letter",
+            "lists",
+            "other"
+          ]
+        },
+        "years": {
+          "description": "Годы из имени файла: «1960», «1942–1945».",
+          "type": "string"
+        },
+        "cover": {
+          "description": "Первая страница, маленькая копия — адрес от корня сайта.",
+          "type": "string"
+        },
+        "pdf": {
+          "description": "PDF всех страниц — адрес от корня сайта.",
+          "type": "string"
+        },
+        "doc": {
+          "description": "Номер заметки с описанием и текстом документа — data/docs/<номер>.json, страница /<язык>/docs/<номер>.",
+          "$ref": "doc.schema.json#/$defs/DocId"
+        },
+        "pages": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "origin": {
+          "type": "string"
+        },
+        "private": {
+          "description": "PDF и обложка — только по паролю (документ живого или контакты в тексте).",
+          "const": true
+        }
+      },
+      "required": [
+        "title",
+        "kind",
+        "years",
+        "doc"
+      ],
+      "additionalProperties": false
+    },
+    "LifeEvent": {
+      "type": "object",
+      "properties": {
+        "date": {
+          "$ref": "common.schema.json#/$defs/Date"
+        },
+        "place": {
+          "$ref": "common.schema.json#/$defs/Id"
+        }
+      },
+      "additionalProperties": false
+    },
+    "LifelineRow": {
+      "type": "object",
+      "properties": {
+        "when": {
+          "description": "Дата, как написана в биографии: «1944 (осень)», «(без даты)».",
+          "type": "string"
+        },
+        "date": {
+          "$ref": "common.schema.json#/$defs/Date"
+        },
+        "text": {
+          "description": "Что было — Markdown, как у фактов.",
+          "type": "string"
+        },
+        "where": {
+          "description": "Где он был в это время — город или деревня, Markdown со ссылкой на место (колонка «Где»). На странице не показывается: по ней видно переезды.",
+          "type": "string"
+        },
+        "extra": {
+          "description": "Остальные колонки таблицы: «Источник», «Время на записи»…",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "col": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "col",
+              "value"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "when",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "BioText": {
+      "type": "object",
+      "properties": {
+        "md": {
+          "description": "Текст биографии: Markdown, ссылки — по номеру, как у фактов (common.schema.json, Fact.text); картинки — адрес на сайте. Линии жизни в тексте нет — она в lifeline.",
+          "type": "string",
+          "minLength": 1
+        },
+        "ai": {
+          "description": "Перевод ИИ, человек не проверял.",
+          "type": "boolean"
+        },
+        "stale": {
+          "description": "Русский текст поменялся после перевода.",
+          "type": "boolean"
+        },
+        "lifeline": {
+          "description": "Линия жизни из перевода — на его языке (у русского текста она в biography.lifeline).",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LifelineRow"
+          }
+        },
+        "memory": {
+          "description": "«Память» из перевода — на его языке (у русского текста она в biography.memory).",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LifelineRow"
+          }
+        },
+        "recollections": {
+          "description": "«Воспоминания» из перевода — на его языке (у русского текста они в biography.recollections).",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Recollection"
+          }
+        },
+        "questions": {
+          "description": "«Открытые вопросы» из перевода — на его языке.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "md"
+      ],
+      "additionalProperties": false
+    },
+    "Recollection": {
+      "description": "Воспоминание — сценка, которую кто-то помнит о человеке (раздел «Воспоминания» биографии): не факт для дерева, а то, каким его видели.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "description": "Название сценки.",
+          "type": "string",
+          "minLength": 1
+        },
+        "by": {
+          "description": "Кто вспоминает и откуда: «Вспоминает [Мария](person:…), внучка · А08, 53:25». Markdown, ссылки по номеру.",
+          "type": "string"
+        },
+        "text": {
+          "description": "Рассказ или цитата: Markdown, ссылки по номеру.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "text"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

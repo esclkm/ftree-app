@@ -1,0 +1,76 @@
+# Проверка приложения на вымышленном дереве — так же, как его запустит новый человек:
+# rodo init → rodo import gedcom tools/sample/sample.ged → все проверки дерева → тесты → выгрузка и сборка сайта.
+# Ни одного настоящего дерева здесь нет и не нужно. Плюс gitleaks — пароли и ключи в коде.
+name: Проверки приложения
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sample-tree:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3   # у setup-uv нет короткой метки v10 — только полная версия
+      - name: Python и библиотеки (uv.lock)
+        run: uv sync --frozen
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: web/.node-version
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Библиотеки сайта (package-lock.json)
+        working-directory: web
+        run: npm ci
+      - name: Новое дерево (rodo init) и вымышленный образец (rodo import gedcom)
+        run: |
+          TREE="$RUNNER_TEMP/sample-tree"; echo "TREE=$TREE" >> "$GITHUB_ENV"
+          git config --global user.name "ci"
+          git config --global user.email "ci@example.invalid"
+          tools/rodo init "$TREE" --title "Sample tree"
+          cd "$TREE" && FTREE_ROOT="$TREE" "$GITHUB_WORKSPACE/tools/rodo" import gedcom "$GITHUB_WORKSPACE/tools/sample/sample.ged"
+          git add -A && git commit -qm "sample" --no-verify
+      - name: Все проверки дерева и тесты (tools/ci.sh)
+        run: FTREE_ROOT="$TREE" sh tools/ci.sh
+      - name: rodo check изнутри дерева, без FTREE_ROOT (дерево — по папке, а не по ~/.config/ftree/env)
+        working-directory: ${{ runner.temp }}/sample-tree
+        run: |
+          echo "FTREE_ROOT=/nonexistent" > "$RUNNER_TEMP/env"
+          test "$(FTREE_ENV_FILE="$RUNNER_TEMP/env" "$GITHUB_WORKSPACE/tools/rodo" check --root)" = "$(pwd -P)"
+          FTREE_ENV_FILE="$RUNNER_TEMP/env" "$GITHUB_WORKSPACE/tools/rodo" check
+      - name: Выгрузка для сайта (rodo site export) и проверка по схеме
+        run: |
+          FTREE_ROOT="$TREE" tools/rodo site export --out "$RUNNER_TEMP/site_export"
+          node web/scripts/check-data.mjs "$RUNNER_TEMP/site_export/data"
+      - name: Типы, линтер, тесты, сборка приложения сайта
+        working-directory: web
+        run: npm run build
+      - name: Сайт из выгрузки, без дерева (scripts/site.mjs build)
+        working-directory: web
+        env:
+          FTREE_ROOT: /nonexistent
+        run: node scripts/site.mjs build --no-app --data "$RUNNER_TEMP/site_export" --out "$RUNNER_TEMP/site"
+
+  gitleaks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: gitleaks — пароли и ключи по всей истории
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.28.0/gitleaks_8.28.0_linux_x64.tar.gz | tar -xz gitleaks
+          ./gitleaks git --redact --no-banner .

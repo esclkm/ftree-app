@@ -1,0 +1,41 @@
+#!/bin/sh
+# Сохранить и отправить одной командой: добавить файлы → коммит → push. Остальное делают хуки сами:
+#   pre-commit  — новые фото, PDF, звук → в опись; пересчёты (ветки, «Рассказ», каталог фото); проверки;
+#   post-commit — медиа в облако, в фоне;
+#   pre-push    — проверки как на GitHub; push в master — сборка и выкладка сайта, в фоне.
+# Пишет одну строку «готово» или что сломалось — без простыней вывода.
+#
+#   tools/ship "Текст коммита" <файл или папка>…   — только эти (рядом работают другие сессии — их правки не берём)
+#   tools/ship "Текст коммита" --all               — всё, что поменялось (когда точно один работаешь)
+#   tools/ship "Текст коммита"                     — то, что уже добавлено (git add)
+set -u
+cd "$(git rev-parse --show-toplevel)" || exit 2
+[ $# -ge 1 ] || { sed -n 2,11p "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+msg=$1; shift
+LOG=$(mktemp "${TMPDIR:-/tmp}/ftree-ship.XXXXXX")
+
+if [ "${1:-}" = "--all" ]; then
+  git add -A
+elif [ $# -gt 0 ]; then
+  git add -- "$@" || exit 1
+fi
+git diff --cached --quiet && { echo "Нечего сохранять: ничего не добавлено (tools/ship \"текст\" <файлы> | --all)."; exit 1; }
+
+if ! git commit -q -m "$msg" >"$LOG" 2>&1; then
+  echo "✋ Коммит не прошёл:"; grep -v '^$' "$LOG" | tail -30; exit 1
+fi
+sha=$(git rev-parse --short HEAD)
+grep -h '^☁️\|^Пересчитано\|^⚠️' "$LOG"
+
+branch=$(git rev-parse --abbrev-ref HEAD)
+push() { git push -q origin HEAD >"$LOG" 2>&1; }
+if ! push; then
+  if grep -q 'fetch first\|non-fast-forward\|rejected' "$LOG"; then   # на GitHub есть новее — подтянуть и ещё раз
+    git pull -q --rebase --autostash origin "$branch" >>"$LOG" 2>&1 && push
+  else
+    false
+  fi || { echo "✋ Коммит $sha сохранён, но push не прошёл:"; grep -v '^$' "$LOG" | tail -30; exit 1; }
+fi
+grep -h '^🌐' "$LOG"
+echo "✅ $sha отправлен ($branch): $msg"
+rm -f "$LOG"

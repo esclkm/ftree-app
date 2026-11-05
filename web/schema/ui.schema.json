@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ftree-app.invalid/schema/ui.schema.json",
+  "title": "Надписи и значки — data/ui.json",
+  "description": "Надписи интерфейса на языках сайта (I18N_ROWS в tools/scripts/site_export.py) и контуры значков (Material Icons). Приложение читает их первыми.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "ui/1"
+    },
+    "i18n": {
+      "type": "object",
+      "properties": {
+        "ru": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "pl": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "es": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "en": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "ru",
+        "pl",
+        "es",
+        "en"
+      ],
+      "additionalProperties": false
+    },
+    "icons": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "i18n",
+    "icons"
+  ],
+  "additionalProperties": false
+}

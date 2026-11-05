@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ftree-app.invalid/schema/doc.schema.json",
+  "title": "Заметка проекта — data/docs/<номер>.json",
+  "description": "Заметка, на которую есть ссылка из текстов сайта: расшифровка, полный текст находки, документ человека (2_transcripts/documents). Номер — первые 10 знаков md5 пути заметки, как у прежних страниц docs/<номер>.html (старые ссылки ведут сюда). Записи разговоров в семье — только описание (audio), без текста. goto — у старого адреса, у которого теперь своя страница (источник, биография человека).",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "doc/1"
+    },
+    "id": {
+      "$ref": "#/$defs/DocId"
+    },
+    "goto": {
+      "description": "Старый адрес: открыть эту страницу вместо заметки.",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "source",
+            "person"
+          ]
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/Id"
+        }
+      },
+      "required": [
+        "kind",
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "path": {
+      "description": "Где заметка лежит в проекте (2_transcripts/…) — подпись под названием.",
+      "type": "string"
+    },
+    "meta": {
+      "description": "Поля заметки, которые видны под названием.",
+      "type": "object",
+      "properties": {
+        "origin": {
+          "type": "string"
+        },
+        "repository": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "people": {
+      "description": "Кто ссылается на заметку как на источник (sources карточки).",
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/Id"
+      }
+    },
+    "media": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "kind": {
+            "const": "photo"
+          },
+          "private": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "url",
+          "kind",
+          "private"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "files": {
+      "description": "Файлы заметки (PDF и др.) — адрес от корня сайта.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "url"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "audio": {
+      "description": "Запись разговора в семье: на сайте только описание.",
+      "type": "boolean"
+    },
+    "md": {
+      "description": "Текст (Markdown, ссылки по номеру — как у источника).",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema",
+    "id"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "DocId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{10}$"
+    }
+  }
+}

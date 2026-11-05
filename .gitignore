@@ -1,0 +1,15 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+# Site app (web/)
+web/node_modules/
+web/dist/
+web/dist-app/
+web/site_assets/netlify/public/
+# Caches and model weights (big, per machine)
+tools/.cache/
+tools/ai_weights/
+tools/tree-viewer/
+# macOS
+.DS_Store
