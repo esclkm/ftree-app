@@ -62,7 +62,6 @@ check "брак, развод, дети — у обоих (check_family_sync)" $
 check "места в фактах — ссылками, иначе нет на карте (check_fact_places)" $PY $S/check_fact_places.py
 check "журнал поиска (searched)" $PY $S/searched.py check
 check "каталог архивов (archives lint)" $PY $S/archives.py lint
-check "скорость вопросов к дереву (check_tree_speed)" $PY $S/check_tree_speed.py
 # тесты — про код приложения, не про проверяемое дерево: идут на вымышленном образце (tests/sample_tree.py собирает его
 # из tools/sample/sample.ged и сам ставит FTREE_ROOT), живое дерево не читают
 # FTREE_CI_SKIP_TESTS=1 — без тестов: так ci.sh зовёт тест «из коробки» (tests/test_import_gedcom.py), иначе тесты по кругу
@@ -71,6 +70,10 @@ check "тесты скриптов"                    env -u FTREE_ROOT $PY -m 
 report "ссылки (check_links) — только отчёт"   sh -c "$PY $S/check_links.py | tail -3"
 report "логика семьи по датам (check_family_logic) — только отчёт" $PY $S/check_family_logic.py --quiet
 report "дата есть, факта нет (check_fact_dates) — только отчёт" sh -c "$PY $S/check_fact_dates.py | tail -1"
+wait
+# скорость — отдельно, когда остальные закончились: рядом с двумя десятками проверок она мерит не дерево, а очередь к
+# процессору (на сервере GitHub ядер мало: 05.11.2026 — чтение 15,5 с вместо ≈1 с на Mac, проверка падала зря)
+check "скорость вопросов к дереву (check_tree_speed)" $PY $S/check_tree_speed.py
 wait
 
 for f in "$JOBS"/*.name; do
