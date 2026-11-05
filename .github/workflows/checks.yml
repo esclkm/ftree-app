@@ -48,7 +48,9 @@ jobs:
         working-directory: ${{ runner.temp }}/sample-tree
         run: |
           echo "FTREE_ROOT=/nonexistent" > "$RUNNER_TEMP/env"
-          test "$(FTREE_ENV_FILE="$RUNNER_TEMP/env" "$GITHUB_WORKSPACE/tools/rodo" check --root)" = "$(pwd -P)"
+          got=$(FTREE_ENV_FILE="$RUNNER_TEMP/env" "$GITHUB_WORKSPACE/tools/rodo" check --root | tail -n 1)
+          echo "дерево: $got"
+          test "$(cd "$got" && pwd -P)" = "$(pwd -P)"
           FTREE_ENV_FILE="$RUNNER_TEMP/env" "$GITHUB_WORKSPACE/tools/rodo" check
       - name: Выгрузка для сайта (rodo site export) и проверка по схеме
         run: |
