@@ -183,7 +183,11 @@ def crop_face(src: Path, face: dict | None, box: tuple[int, int, int, int] | Non
 def write_fields(card: Path, avatar: str, origin: str) -> None:
     fm, rest = front(card)
     fm = re.sub(r"^avatar(_from)?:.*\n?", "", fm + "\n", flags=re.M).rstrip("\n")
-    fm += f'\navatar: "[[{avatar}]]"\navatar_from: "[[{origin}]]"'
+    add = f'avatar: "[[{avatar}]]"\navatar_from: "[[{origin}]]"'
+    if re.search(r"^lineage:", fm, re.M):  # ветки assign_lineage держит последними — встаём перед ними
+        fm = re.sub(r"^lineage:", lambda m: add + "\nlineage:", fm, count=1, flags=re.M)
+    else:
+        fm += "\n" + add
     card.write_text(fm + rest, encoding="utf-8")
 
 
