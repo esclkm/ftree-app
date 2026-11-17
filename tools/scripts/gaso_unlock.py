@@ -46,9 +46,12 @@ def js(body: str, timeout: int = 300) -> str:
 
 def remaining() -> str:
     cdp("nav", f"{PORTAL}/personalAccount.jsf")
-    time.sleep(2)
-    m = re.findall(r"\d\d:\d\d:\d\d", cdp("eval", "document.body.innerText.replace(/\\s+/g,' ')"))
-    return m[0] if m else "нет абонемента"
+    for _ in range(10):  # страница кабинета догружает абонементы не сразу — не путать «не загрузилось» с «нет»
+        time.sleep(2)
+        m = re.findall(r"\d\d:\d\d:\d\d", cdp("eval", "document.body.innerText.replace(/\\s+/g,' ')"))
+        if m:
+            return m[0]
+    return "нет абонемента"
 
 
 def open_delo(opis_id: int, delo: str) -> str:
