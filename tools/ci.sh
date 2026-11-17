@@ -70,6 +70,7 @@ check "тесты скриптов"                    env -u FTREE_ROOT $PY -m 
 report "ссылки (check_links) — только отчёт"   sh -c "$PY $S/check_links.py | tail -3"
 report "логика семьи по датам (check_family_logic) — только отчёт" $PY $S/check_family_logic.py --quiet
 report "дата есть, факта нет (check_fact_dates) — только отчёт" sh -c "$PY $S/check_fact_dates.py | tail -1"
+report "аватар: фото есть, лица в кружке нет (avatar.py missing) — только отчёт" sh -c "$PY $S/avatar.py missing | tail -1"
 wait
 # скорость — отдельно, когда остальные закончились: рядом с двумя десятками проверок она мерит не дерево, а очередь к
 # процессору (на сервере GitHub ядер мало: 05.11.2026 — чтение 15,5 с вместо ≈1 с на Mac, проверка падала зря)

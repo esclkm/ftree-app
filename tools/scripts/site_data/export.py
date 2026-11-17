@@ -174,6 +174,10 @@ class Extras:
         """→ [(адрес от корня сайта, закрыт паролем?)] — фото из media карточки, первое — портрет"""
         return []
 
+    def avatar(self, pid):
+        """→ (адрес, закрыт?) лица в кружке у имени или None; по умолчанию — первое фото"""
+        return (self.media(pid) or [None])[0]
+
     def media_url(self, name):
         """Имя файла из [[…jpg]] → адрес на сайте или None"""
         return None
@@ -300,7 +304,7 @@ class Export:
                       for y0, y1, ev, place, era in self.extras.stays(p.id)],
             "homes": self.homes(p.id),
             "media": self.media(p.id),
-            "avatar": (self.media(p.id) or [None])[0],
+            "avatar": ({"url": a[0], "kind": "photo", "private": a[1]} if (a := self.extras.avatar(p.id)) else None),
             **self.life_photos(p.id),
             "documents": [_drop_empty({**x, "title": self.text.clean(x["title"]), "private": x["private"] or None,
                                        "titles": {k: self.text.clean(v) for k, v in x["titles"].items()} if x.get("titles") else None})
@@ -459,7 +463,7 @@ class Export:
         ids = [place_id, *self._inside_all(place_id)]
         folk = list(dict.fromkeys([pid for i in ids for pid, _ in self.extras.place_people(i)]
                                   + [pid for i in ids for pid in self.extras.place_mentions(i)]))
-        face = {pid for pid in folk if any(not private for _, private in self.extras.media(pid)[:1])}
+        face = {pid for pid in folk if (a := self.extras.avatar(pid)) and not a[1]}
         return sorted(folk, key=lambda pid: pid not in face)  # сортировка устойчивая: внутри — прежний порядок
 
     def _inside_all(self, place_id):
@@ -588,7 +592,7 @@ class Export:
             "people": [_drop_empty({"id": p.id, "slug": self.slugs[p.id], "names": self.person_names[p.id], "sex": p.sex,
                                     "life": self.life[p.id], "lineage": [str(x) for x in as_list(p.fm.get("lineage"))],
                                     "parents": p.father + p.mother, "spouses": p.spouses, "children": p.children,
-                                    "avatar": next((u for u, private in self.extras.media(p.id)[:1] if not private), None),
+                                    "avatar": (a[0] if (a := self.extras.avatar(p.id)) and not a[1] else None),
                                     "stats": self.extras.stats(p.id), **(self.extras.card(p.id) or {}),
                                     "kinship": kin[p.id][0], "kinship_by": kin[p.id][1],
                                     "unknown": bool(UNKNOWN.match(p.name)) or None},

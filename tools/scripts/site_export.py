@@ -1665,6 +1665,15 @@ class SiteExtras(export.Extras):
         urls = [u for u in (photo(m) for m in as_list(by_id[pid]["f"].get("media"))) if u]
         return [("/" + u, "/" + N(u) in self.private) for u in dict.fromkeys(urls)]
 
+    def avatar(self, pid):
+        """Лицо в кружке у имени: поле avatar карточки (вырезка, avatar.py), закрыто — если закрыт снимок, из которого
+        вырезано (avatar_from); нет поля — первое фото, как раньше."""
+        f = by_id[pid]["f"]
+        if (u := photo(f.get("avatar") or "")):
+            origin = photo(f.get("avatar_from") or "")
+            return ("/" + u, "/" + N(u) in self.private or bool(origin and "/" + N(origin) in self.private))
+        return (self.media(pid) or [None])[0]
+
     def media_url(self, name):
         u = photo(name) or file_url(name)  # снимок — уменьшенной копией, PDF и прочее — файлом
         return "/" + u if u else None
