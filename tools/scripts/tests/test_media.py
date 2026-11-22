@@ -65,7 +65,8 @@ class MediaTest(unittest.TestCase):
         self.write(f"{TRANSCRIPTS_AUDIO}/_raw_audio01/audio.wav", b"wav")                 # копия для распознавания
         self.write("web/public/logo.png", b"code")                                        # картинка кода
         self.write(f"{PEOPLE}/Сергей.md",
-                   '---\nmedia:\n  - "[[Сергей_1950.jpg]]"\n---\nФото: [[Сергей_1950.jpg|снимок]]\n')
+                   '---\nmedia:\n  - "[[Сергей_1950.jpg]]"\n---\nФото: [[Сергей_1950.jpg|снимок]]\n'
+                   'Город: ![[Брест.png]], та же копия — см. копия_Бреста.png\n')  # найденное в облако — только привязанное
         self.ctx = media.make_ctx(str(self.root), "t:", str(self.open))
 
     def tearDown(self):
@@ -110,6 +111,44 @@ class MediaTest(unittest.TestCase):
             self.assertNotIn("media", p.relative_to(self.cloud).as_posix())
             self.assertNotIn(b"pdf-1", p.read_bytes())
         self.assertEqual(run(self.ctx, "verify", "--deep")[0], 0)
+
+    def test_unlinked_found_stays_on_mac_family_always_goes(self):
+        self.write(f"{ARCHIVES_ONLINE}/книга/лист_001.jpg", b"scan-1")        # скачанный скан, ни к чему не привязан
+        self.write(f"{ARCHIVES_ONLINE}/книга/лист_002.jpg", b"scan-2")        # а этот — в отчёте
+        self.write(f"{PHOTOS_FAMILY}/Без_подписи.jpg", b"family-unlinked")   # семейное — всегда в облако
+        self.write("3_research/отчёт.md", "Нашли на листе [лист](../1_sources/x/лист_002.jpg).\n")
+        code, out = run(self.ctx, "push")
+        self.assertEqual(code, 0, out)
+        self.assertIn("только на Mac", out)
+        self.assertFalse((self.open / f"{ARCHIVES_ONLINE}/книга/лист_001.jpg").exists())
+        self.assertTrue((self.open / f"{ARCHIVES_ONLINE}/книга/лист_002.jpg").exists())
+        self.assertTrue((self.open / f"{PHOTOS_FAMILY}/Без_подписи.jpg").exists())
+        self.assertEqual(run(self.ctx, "status")[0], 0, "непривязанное не считается «не отправленным»")
+        self.assertEqual(run(self.ctx, "verify")[0], 0)
+        # привязали позже — уходит со следующим push
+        self.write("3_research/отчёт.md", "Листы лист_001.jpg и лист_002.jpg.\n")
+        run(self.ctx, "push")
+        self.assertTrue((self.open / f"{ARCHIVES_ONLINE}/книга/лист_001.jpg").exists())
+
+    def test_prune_removes_unlinked_and_stale_but_not_only_copies(self):
+        self.write(f"{ARCHIVES_ONLINE}/книга/лист_001.jpg", b"scan-1")
+        self.write(f"{ARCHIVES_ONLINE}/книга/лист_002.jpg", b"scan-2")
+        self.write("3_research/отчёт.md", "лист_001.jpg, лист_002.jpg\n")
+        run(self.ctx, "push")
+        (self.open / "старое_переименованное.jpg").write_bytes(b"stale")          # в описи такого нет
+        self.write("3_research/отчёт.md", "больше ни на что не ссылаемся\n")
+        (self.root / f"{ARCHIVES_ONLINE}/книга/лист_002.jpg").unlink()           # на Mac нет — облако единственное
+        code, out = run(self.ctx, "prune", "-n")
+        self.assertEqual(code, 0, out)
+        self.assertTrue((self.open / "старое_переименованное.jpg").exists(), "-n ничего не стирает")
+        code, out = run(self.ctx, "prune")
+        self.assertEqual(code, 0, out)
+        self.assertFalse((self.open / "старое_переименованное.jpg").exists())
+        self.assertFalse((self.open / f"{ARCHIVES_ONLINE}/книга/лист_001.jpg").exists())
+        self.assertTrue((self.root / f"{ARCHIVES_ONLINE}/книга/лист_001.jpg").exists(), "диск не трогаем")
+        self.assertTrue((self.open / f"{ARCHIVES_ONLINE}/книга/лист_002.jpg").exists(), "единственная копия остаётся")
+        self.assertTrue((self.open / f"{PHOTOS_FAMILY}/Сергей_1950.jpg").exists())
+        self.assertFalse(self.rows()[f"{ARCHIVES_ONLINE}/книга/лист_001.jpg"].get("pushed"))
 
     def test_names_match_whatever_unicode_form_the_cloud_uses(self):
         import unicodedata

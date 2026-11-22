@@ -16,6 +16,7 @@
 Правила:
 - Кто есть кто — от Павла по родству (родители, дети, супруги), потом — по имени и году, если ответ один.
 - Семья — все, кто связан с Павлом через родителей, детей, супругов. Посторонние из документов не идут.
+- Предполагаемые предки (в карточке `kinship: возможно` и ниже) не идут, через них не обходим.
 - Имя — русское написание (aliases), если есть; фамилия женщины в карточке — девичья (birthLastName), фамилия по мужу —
   с Familio или от мужа. Отчество на Familio не трогаем (у нас их нет по правилу, это не значит «неверно»).
 - Даты, места, родители, супруги — наши. Пусто у нас, есть на Familio — оставляем Familio. Лишних не удаляем — список.
@@ -27,6 +28,7 @@ import time
 import urllib.request
 from pathlib import Path
 
+from cards import kinship
 from cards.tree import load
 from paths import ARCHIVES_ONLINE, TREE_DATA, tree_conf
 
@@ -34,6 +36,7 @@ MAP = ARCHIVES_ONLINE / "familio" / "settlements.json"
 SNAP = TREE_DATA / "familio_match.json"   # слепок: наша карточка (cr_id) → человек на Familio; следующий раз не угадываем
 OWNER = "568116a2-82ec-4a52-a777-747384d8034e"   # аккаунт Павла на Familio (открытый номер, не ключ входа)
 API = "https://familio.org/api"
+GOOD = ("proven", "likely")   # кого из нашего дерева выгружаем: доказано и вероятно
 
 
 def get(path):
@@ -141,10 +144,17 @@ def family(T):
     me = next((p for p in T.people.values() if p.stem == me_stem), None)
     if me is None:
         sys.exit(f"нет карточки «{me_stem}» — задайте [familio] me в ftree.toml")
+    # «возможно» и ниже, поставленное в карточке полем kinship (предполагаемые предки — бледные на сайте), на Familio
+    # не идёт, и через таких не обходим; уровень, посчитанный по дальности родства, не мешает:
+    # в чужом дереве догадка быстро становится фактом (как в familysearch_export; навык archive-familio)
+    K = kinship.levels(T)
     seen, st = set(), [me.id]
     while st:
         i = st.pop()
         if i in seen or i not in T.people:
+            continue
+        lvl, by = K.get(i, ("proven", "facts"))
+        if i != me.id and by == "card" and lvl not in GOOD:   # уровень поставлен в карточке руками — это догадка
             continue
         seen.add(i)
         p = T.people[i]

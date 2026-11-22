@@ -29,7 +29,7 @@ def person(root, name, cid, sex, **kw):
 
 def family():
     """Дед Прокоп + Феврония → Сергей (+ Мария) → Николай → Михаил; брат Михаила Пётр; сестра Сергея Ольга → её сын
-    Иван; жена Михаила Люцина, её мать Ядвига. Фамилия Сабулик — то латиницей, то по-русски, то по-белорусски."""
+    Иван; жена Михаила Люцина, её мать Ванда. Фамилия Сабулик — то латиницей, то по-русски, то по-белорусски."""
     root = Path(tempfile.mkdtemp())
     write(root / "sources", SRC, f'cr_type: source\ncr_id: src-001-aaa-001\ntitle: "{SRC}"\norigin: "семья"')
     write(root / "places", "Беларусь", "cr_type: place\ncr_id: plc-000-aaa-000\nname: Беларусь\nplace_type: country",
@@ -51,7 +51,7 @@ def family():
     person(root, "Mikhail Sabulik", "p", "male", born=1986, father_id="a", spouse_id="v")
     person(root, "Пётр Сабулік", "pe", "male", born=1990, father_id="a")
     person(root, "Lucyna Piszkel", "v", "female", born=1990, mother_id="st")
-    person(root, "Ядвига Пишкель", "st", "female", born=1960)
+    person(root, "Ванда Пишкель", "st", "female", born=1960)
     (root / "events").mkdir()
     return root, cards.load(root)
 

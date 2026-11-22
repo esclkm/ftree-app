@@ -108,7 +108,9 @@ export function Recollections({bio}: {bio: Bio}) {
 export function Photos({p, ix}: {p: PersonFile; ix: Lookup}) {
   const t = useT(), lb = useLightbox(), lang = useLang()
   const shown = (p.media ?? []).filter(m => !m.private)
-  if (shown.length < 2) return null  // одно фото — уже в шапке
+  // одно фото — уже в шапке; но если в шапке лицо, вырезанное из общего снимка, сам снимок показываем здесь
+  const inHeader = !p.avatar || p.avatar.private || p.avatar.url === shown[0]?.url
+  if (!shown.length || (shown.length < 2 && inHeader)) return null
   // кто где на общем фото: рамки с именами (на сайте только те, кто есть в списке людей)
   const shots = shown.map(m => ({src: m.url, faces: (m.faces ?? []).flatMap(f => {
     const x = ix.people.get(f.person)

@@ -22,10 +22,18 @@
   media.py verify [--deep]        — облако против описи: каждый файл на месте, размер совпадает; --deep — ещё сверка
                                     содержимого (rclone check / cryptcheck) для того, что есть на диске
   media.py mv <старый> <новый>    — переименовать файл на диске, в описи и в открытом облаке, поправить ссылки в .md
+  media.py prune [-n]             — стереть из облака лишнее: найденное в сети, на которое ничто не ссылается, и старые
+                                    копии, которых нет в описи (на диске ничего не трогает); -n — только показать
   media.py rm <путь> [--force]    — убрать файл с диска (в Корзину), из описи и из открытого облака (в его корзину);
                                     семейный оригинал — только с --force
   media.py check-staged           — для pre-commit: медиа в индексе git — стоп (новое на диске pre-commit вносит сам: add)
   media.py stub                   — только на GitHub (CI): пустые файлы по описи, чтобы проверки видели «файл есть»
+
+Что идёт в облако (решение владельца дерева, 23.11.2026): облако — копия того, что нужно, а не склад сырья.
+  • всё семейное (1_sources/family) и обработанное (2_transcripts) — всегда, даже если на сайте его нет;
+  • найденное в сети (вид found: сканы архивов, книги из Телеграма, фото мест, чужие деревья) — только если на файл
+    ссылается хоть что-то: карточка, опись, отчёт, сайт (имя файла встречается в .md/.json/.tsv… дерева или в сборке
+    сайта). Остальное — только на Mac: его всегда можно скачать заново. Привязал позже — уйдёт со следующим push.
 
 Вид хранилища: `rclone` — любой remote rclone (Jottacloud, S3/R2, Google Drive…), `local` — папка, `none` — никуда.
 Переменные (обычно не нужны; или ~/.config/ftree/env — paths.setting): MEDIA_ROOT — корень проекта; MEDIA_REMOTE,
@@ -204,6 +212,47 @@ def kind_of(rel: str) -> str:
     if rel.startswith(_R(paths.PHOTOS_PROCESSED) + "/"):
         return "processed"
     return "found"
+
+
+REF_EXT = (".md", ".json", ".jsonl", ".tsv", ".toml", ".yaml", ".yml", ".csv", ".txt")
+_REF_EXT = re.compile(r"\.(?:" + "|".join(e[1:] for e in sorted(MEDIA_EXT)) + r")\b", re.I)
+_REF_STOP = re.compile(r"[\[\]()|/\\\"'`\n\t<>]")
+_RAW = tuple(_R(p) + "/" for p in (paths.FOUND, paths.OTHERS_TREES))  # найденное в сети и чужие деревья
+
+
+def referenced_names(ctx: Ctx) -> set[str]:
+    """Имена медиа-файлов (без папки, в NFC), на которые что-то ссылается: текст дерева (карточки, описи, отчёты,
+    данные сайта) и файлы, которые сборка сайта положила в 4_outputs. Опись медиа — не ссылка (там все)."""
+    names: set[str] = set()
+    # ссылка — то, что пишет человек или сайт: карточки, биографии, отчёты, расшифровки (3_research, 2_transcripts) и
+    # сборка сайта. Служебные списки рядом со сканами (vision.jsonl, описи внутри 1_sources) — не ссылка: там все листы.
+    for top in (_R(paths.RESEARCH), _R(paths.TRANSCRIPTS), _R(paths.OUTPUTS)):
+        for dirpath, dirs, files in os.walk(ctx.root / top):
+            dirs[:] = [d for d in dirs if not d.startswith(".")]
+            for name in files:
+                if is_media(name):
+                    if top == _R(paths.OUTPUTS):  # сборка сайта: «ba84b8_<имя>.jpg» — приставка-сумма + имя
+                        names.update((nfc(name), nfc(re.sub(r"^[0-9a-f]{6,8}_", "", name))))
+                elif name.endswith(REF_EXT) and not name.endswith(".jsonl"):
+                    try:
+                        text = (Path(dirpath) / name).read_text(encoding="utf-8", errors="ignore")
+                    except OSError:
+                        continue
+                    for m in _REF_EXT.finditer(text):  # от расширения назад до разделителя (быстрее regex с +?)
+                        head = text[max(0, m.start() - 300):m.start()]
+                        stops = list(_REF_STOP.finditer(head))
+                        cand = (head[stops[-1].end():] if stops else head) + m.group(0)
+                        words = cand.strip().split(" ")  # «см. Сергей 1950.jpg» — имя с пробелами: все хвосты
+                        names.update(nfc(" ".join(words[i:])) for i in range(len(words)))
+    return names
+
+
+def wanted_in_cloud(row: dict, refs: set[str]) -> bool:
+    """Семейное, обработанное (вырезки, документы людей), звук и старое из истории — всегда; найденное в сети
+    (1_sources/found) и снимки чужих деревьев (1_sources/others_trees) — только привязанное."""
+    if excluded(row["path"]):  # сырьё, которому место в archives/raw (EXCLUDE), — никогда, даже из истории git
+        return False
+    return not row["path"].startswith(_RAW) or row["kind"] == "history" or nfc(Path(row["path"]).name) in refs
 
 
 def store_of(rel: str, kind: str) -> str:
@@ -419,7 +468,12 @@ def cmd_status(ctx: Ctx, args) -> int:
     print(f"Опись: {len(rows)} файлов, {sum(r['size'] for r in rows.values()) / 1e6:.0f} МБ на диске")
     for k, rs in sorted(kinds.items()):
         print(f"  {k:20} {len(rs):5}  в облаке {sum(1 for r in rs if r.get('pushed')):5}")
-    unsent = [p for p, r in rows.items() if not r.get("pushed")]
+    refs = referenced_names(ctx)
+    unsent = [p for p, r in rows.items() if not r.get("pushed") and wanted_in_cloud(r, refs)]
+    local = [r for r in rows.values() if not wanted_in_cloud(r, refs)]
+    if local:
+        print(f"только на Mac (найдено в сети, ни к чему не привязано): {len(local)} файлов, "
+              f"{sum(r['size'] for r in local) / 1e6:.0f} МБ")
     for label, items in (("не в описи (новые)", rep["new"]), ("изменились на диске", rep["changed"]),
                          ("не отправлены в облако", unsent), ("нет локально (media.py pull)", rep["missing"])):
         if items:
@@ -468,8 +522,14 @@ def cmd_push(ctx: Ctx, args) -> int:
                 rows[r["path"]] = r
         print(f"новых {len(rep['new'])}, изменилось {len(rep['changed'])}, нет локально {len(rep['missing'])}")
         usable = {s for s in ctx.configured() if not (s == CRYPT and blocked)}
+        refs = referenced_names(ctx)
         todo = [r for r in rows.values() if not r.get("pushed") and r.get("store", CRYPT) in usable
                 and (r["kind"] == "history" or (ctx.root / r["path"]).exists())]
+        local = [r for r in todo if not wanted_in_cloud(r, refs)]
+        todo = [r for r in todo if wanted_in_cloud(r, refs)]
+        if local:
+            print(f"только на Mac (найдено в сети, ни к чему не привязано): {len(local)} файлов, "
+                  f"{sum(r['size'] for r in local) / 1e6:.0f} МБ")
         if args.dry_run:
             for store in sorted(usable):
                 part = [r for r in todo if r.get("store", CRYPT) == store]
@@ -517,7 +577,9 @@ def cmd_push(ctx: Ctx, args) -> int:
 def cmd_verify(ctx: Ctx, args) -> int:
     if not ctx.configured():
         return not_configured(ctx)
-    rows = {p: r for p, r in load(ctx).items() if ctx.base(r.get("store", CRYPT))}  # сверяем только заданное
+    refs = referenced_names(ctx)
+    rows = {p: r for p, r in load(ctx).items()  # сверяем только заданное и то, что должно быть в облаке
+            if ctx.base(r.get("store", CRYPT)) and wanted_in_cloud(r, refs)}
     listing = remote_listing(ctx)
     if listing is None:
         return 2
@@ -566,6 +628,61 @@ def cmd_verify(ctx: Ctx, args) -> int:
     print(f"Проверка: в описи {len(rows)}, в облаке {len(listing)}, расхождений {len(bad)}"
           + (f"; {', '.join(notes)}" if notes else "") + extra)
     return 1 if bad else 0
+
+
+def cmd_prune(ctx: Ctx, args) -> int:
+    """Стереть из облака то, чему там не место: найденное в сети без ссылок и старые копии, которых нет в описи.
+    Диск не трогаем. Стираем только то, что есть на диске или чего нет в описи (старые версии того же файла):
+    файл описи, которого нет на Mac, — единственная копия, его не трогаем."""
+    if not ctx.configured():
+        return not_configured(ctx)
+    listing = remote_listing(ctx)
+    if listing is None:
+        return 2
+    refs = referenced_names(ctx)
+    with locked(ctx):
+        rows = load(ctx)
+    expected = {key(r): r for r in rows.values() if r.get("remote")}
+    shared = {}  # шифрованное: одно имя на одинаковое содержимое — нужен ли файл хоть одной строке
+    for r in rows.values():
+        if r.get("remote"):
+            shared[key(r)] = shared.get(key(r), False) or wanted_in_cloud(r, refs)
+    drop, kept_only_copy = [], []
+    for k, size in listing.items():
+        r = expected.get(k)
+        if r is None:
+            drop.append((k, size, None))                         # старая копия: в описи такого нет
+        elif not shared[k]:
+            # есть на диске — или это сырьё из EXCLUDE: его копия в archives/raw, и его можно скачать заново
+            if excluded(r["path"]) or (r["kind"] != "history" and (ctx.root / r["path"]).exists()):
+                drop.append((k, size, r))
+            else:
+                kept_only_copy.append(r["path"])
+    for store in (OPEN, CRYPT):
+        part = [(k, sz, r) for k, sz, r in drop if k[0] == store]
+        print(f"{STORE_NAME[store]}: стереть {len(part)} файлов, {sum(sz for _, sz, _ in part) / 1e6:.0f} МБ "
+              f"(без ссылок {sum(1 for *_, r in part if r)}, старых копий {sum(1 for *_, r in part if not r)})")
+    for p in kept_only_copy[:10]:
+        print(f"  оставлено — на Mac нет, в облаке единственная копия: {p}")
+    if args.dry_run or not drop:
+        return 0
+    for store, base in ((OPEN, ctx.open_remote), (CRYPT, ctx.remote)):
+        names = [ctx._names[k] for k, _, _ in drop if k[0] == store]
+        if not names:
+            continue
+        lst = Path(tempfile.mkdtemp(prefix="media_prune_")) / "files.txt"
+        lst.write_text("\n".join(names) + "\n", encoding="utf-8")
+        rclone("delete", "--files-from-raw", str(lst), base, check=False, capture=False)
+        shutil.rmtree(lst.parent, ignore_errors=True)
+    gone = {r["path"] for _, _, r in drop if r}
+    with locked(ctx):  # пометку «в облаке» снять: привяжут позже — push отправит снова
+        rows = load(ctx)
+        for p in gone:
+            if p in rows:
+                rows[p].pop("pushed", None)
+        save(ctx, rows)
+    print(f"стёрто из облака: {len(drop)}; на диске ничего не тронуто")
+    return 0
 
 
 def cmd_pull(ctx: Ctx, args) -> int:
@@ -762,6 +879,8 @@ def main(argv=None) -> int:
     p = sub.add_parser("mv")
     p.add_argument("old")
     p.add_argument("new")
+    p = sub.add_parser("prune")
+    p.add_argument("-n", "--dry-run", action="store_true")
     p = sub.add_parser("rm")
     p.add_argument("path")
     p.add_argument("--force", action="store_true")
@@ -770,7 +889,8 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
     ctx = make_ctx(args.root, args.remote, args.open_remote)
     return {"status": cmd_status, "push": cmd_push, "pull": cmd_pull, "verify": cmd_verify, "mv": cmd_mv,
-            "rm": cmd_rm, "check-staged": cmd_check_staged, "add": cmd_add, "stub": cmd_stub}[args.cmd](ctx, args)
+            "rm": cmd_rm, "check-staged": cmd_check_staged, "add": cmd_add, "stub": cmd_stub,
+            "prune": cmd_prune}[args.cmd](ctx, args)
 
 
 if __name__ == "__main__":
