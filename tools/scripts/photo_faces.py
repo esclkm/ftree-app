@@ -309,7 +309,9 @@ def cmd_todo() -> None:
     """Снимки, что стоят в media у двух и больше карточек, а отмечены на них не все."""
     import avatar
     where = avatar.media_paths()
-    by_file = {f: c for f, c in media_of_people().items() if len(c) > 1 and f in where and where[f].exists()}
+    # метрики, списки, прошения и могилы — не снимки людей, отмечать на них нечего (те же приметы, что у аватаров)
+    by_file = {f: c for f, c in media_of_people().items() if len(c) > 1 and f in where and where[f].exists()
+               and not avatar.GRAVE.search(f) and not (avatar.DOC.search(f) and not avatar.DOC_PHOTO.search(f))}
     got = read([where[f] for f in by_file])
     n = 0
     for f, who in sorted(by_file.items()):
