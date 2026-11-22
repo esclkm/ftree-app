@@ -99,7 +99,7 @@ function Person({p, ix}: {p: PersonFile; ix: Lookup}) {
     {p.biography && <Biography key={p.id} bio={p.biography} />}
     {p.biography && <Recollections bio={p.biography} />}
     {p.biography && <Questions bio={p.biography} />}
-    <Photos p={p} />
+    <Photos p={p} ix={ix} />
     <Documents p={p} />
     {p.facts.length > 0 && <details className="card fold" key={`facts-${p.id}`}>
       <summary><h2><Icon name="source" />{t('facts')} <span className="count">{p.facts.length}</span></h2></summary>

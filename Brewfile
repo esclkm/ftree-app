@@ -7,6 +7,7 @@ brew "node@24"       # сборка интерфейса сайта (web/: npm c
 brew "gitleaks"       # пароли и ключи в коде приложения: rodo leaks, хуки клона ftree-app (scan_personal.py install)
 brew "rclone"        # медиа в облако — rclone (media.py; хранилище — [storage.*] в ftree.toml дерева)
 brew "ffmpeg"        # сжатие звука для облака (media.py); у распознавания — свой, в ~/.local/share/relatives-asr
+brew "exiftool"      # кто где на фото — метка лиц внутри jpg (photo_faces.py)
 brew "poppler"       # pdftotext: текст PDF для сайта (site_export.py)
 brew "ollama"        # локальная модель для картинок qwen3-vl (gaso_find.py): ollama pull qwen3-vl:8b-instruct
 cask "google-chrome" # свой Chrome с постоянным входом на сайты архивов (tools/scripts/browser_cdp.mjs)

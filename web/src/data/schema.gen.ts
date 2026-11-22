@@ -590,6 +590,26 @@ export interface Media {
    * @maxItems 4
    */
   region?: [number, number, number, number];
+  /**
+   * Кто где на общем фото (photo_faces.py): рамка лица и фигуры в долях ширины и высоты [x0, y0, x1, y1]; в окне просмотра при наведении подсвечивается человек целиком и его имя.
+   */
+  faces?: {
+    person: Id;
+    /**
+     * Лицо на общем фото: доли ширины и высоты [x1, y1, x2, y2] (GEDCOM X RectangleRegion).
+     *
+     * @minItems 4
+     * @maxItems 4
+     */
+    region: [number, number, number, number];
+    /**
+     * Фигура человека целиком (Vision или по пропорциям от лица) — её подсвечивает окно просмотра.
+     *
+     * @minItems 4
+     * @maxItems 4
+     */
+    body?: [number, number, number, number];
+  }[];
 }
 export interface Document {
   title: string;

@@ -105,11 +105,15 @@ export function Recollections({bio}: {bio: Bio}) {
   </section>
 }
 
-export function Photos({p}: {p: PersonFile}) {
-  const t = useT(), lb = useLightbox()
+export function Photos({p, ix}: {p: PersonFile; ix: Lookup}) {
+  const t = useT(), lb = useLightbox(), lang = useLang()
   const shown = (p.media ?? []).filter(m => !m.private)
   if (shown.length < 2) return null  // одно фото — уже в шапке
-  const shots = shown.map(m => ({src: m.url}))
+  // кто где на общем фото: рамки с именами (на сайте только те, кто есть в списке людей)
+  const shots = shown.map(m => ({src: m.url, faces: (m.faces ?? []).flatMap(f => {
+    const x = ix.people.get(f.person)
+    return x ? [{name: `${nameIn(x.names, lang)}${x.life ? ` ${x.life}` : ''}`, box: f.region, body: f.body}] : []
+  })}))
   return <section className="card">
     <h2><Icon name="pics" />{t('photos')}</h2>
     <div className="gallery">{shown.map((m, i) =>

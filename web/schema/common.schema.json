@@ -323,6 +323,45 @@
           },
           "minItems": 4,
           "maxItems": 4
+        },
+        "faces": {
+          "description": "Кто где на общем фото (photo_faces.py): рамка лица и фигуры в долях ширины и высоты [x0, y0, x1, y1]; в окне просмотра при наведении подсвечивается человек целиком и его имя.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "person": {
+                "$ref": "#/$defs/Id"
+              },
+              "region": {
+                "description": "Лицо на общем фото: доли ширины и высоты [x1, y1, x2, y2] (GEDCOM X RectangleRegion).",
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "minItems": 4,
+                "maxItems": 4
+              },
+              "body": {
+                "description": "Фигура человека целиком (Vision или по пропорциям от лица) — её подсвечивает окно просмотра.",
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "minItems": 4,
+                "maxItems": 4
+              }
+            },
+            "required": [
+              "person",
+              "region"
+            ],
+            "additionalProperties": false
+          }
         }
       },
       "required": [

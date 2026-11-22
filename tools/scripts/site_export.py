@@ -1678,6 +1678,12 @@ class SiteExtras(export.Extras):
         u = photo(name) or file_url(name)  # снимок — уменьшенной копией, PDF и прочее — файлом
         return "/" + u if u else None
 
+    def photo_faces(self, url):
+        if not hasattr(self, "_faces"):  # метка лиц внутри jpg (photo_faces.py); адрес — тот же, что у снимка в media
+            import photo_faces
+            self._faces = {"/" + u: rows for f, rows in photo_faces.for_site().items() if (u := photo(f))}
+        return self._faces.get(url, [])
+
     # ---------- заметки проекта (data/docs/) ----------
 
     def note(self, target):

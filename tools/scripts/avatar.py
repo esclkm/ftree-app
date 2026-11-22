@@ -14,7 +14,8 @@
 
 Лица ищет встроенное в macOS распознавание (faces.swift, Vision) — без сети. На общем фото машина не знает, кто
 есть кто: такой снимок идёт в список «выбрать лицо» с пронумерованными рамками (`pick`), номер ставит человек или
-модель по подписи, потом `set … --face N`.
+модель по подписи, потом `set … --face N`. Выбранное на общем фото лицо записывается и в «кто где» для сайта
+(`photo_faces.py`: метка лиц внутри jpg).
 
     tools/py tools/scripts/avatar.py scan                  # все люди с фото: вид снимков, лица, что выбрано бы
     tools/py tools/scripts/avatar.py auto [--dry]          # проставить, где выбор однозначен (портрет, могила, документ…)
@@ -224,6 +225,10 @@ def set_avatar(card_name: str, file: str, face_no: int | None = None, box=None, 
         im.thumbnail((600, 600))
         im.save(OUT_DIR / name, "JPEG", quality=90)
         write_fields(card, name, N(file))
+        if group:  # на общем фото выбор лица = заодно «кто где» для сайта (photo_faces.py)
+            import photo_faces
+            fb = (face["x"], face["y"], face["x"] + face["w"], face["y"] + face["h"]) if face else box
+            photo_faces.set_person(file, card_name, photo_faces.frac(fb, page["width"], page["height"]))
     return name
 
 

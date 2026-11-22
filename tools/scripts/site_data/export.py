@@ -182,6 +182,10 @@ class Extras:
         """Имя файла из [[…jpg]] → адрес на сайте или None"""
         return None
 
+    def photo_faces(self, url):
+        """Кто где на снимке (photo_faces.py): [(cr_id, лицо, фигура — [x0, y0, x1, y1] в долях)] по адресу снимка"""
+        return []
+
     def stays(self, pid):
         """→ [(с, по, событие ev_…, cr_id места, государство тогда или None)]"""
         return []
@@ -360,7 +364,13 @@ class Export:
                 "life_photos_other": other}
 
     def media(self, pid):
-        return [{"url": url, "kind": "photo", "private": private} for url, private in self.extras.media(pid)]
+        return [self.media_item(url, private) for url, private in self.extras.media(pid)]
+
+    def media_item(self, url, private):
+        """Снимок для сайта; на общем фото — кто где (рамки лиц), только люди, что есть на сайте."""
+        faces = [{"person": pid, "region": box, "body": body} for pid, box, body in self.extras.photo_faces(url)
+                 if pid in self.tree.people]
+        return _drop_empty({"url": url, "kind": "photo", "private": private, "faces": faces or None}, keep=("private",))
 
     # ---------- место и источник ----------
 
@@ -502,7 +512,7 @@ class Export:
             "repository": self.text.clean(s.repository),
             "md": self.text(t) if (t := self.extras.source_text(s.stem)) else None,
             "audio": audio_source(s.fm) or None,
-            "media": [{"url": u, "kind": "photo", "private": private} for u, private in self.extras.source_media(s.stem)],
+            "media": [self.media_item(u, private) for u, private in self.extras.source_media(s.stem)],
             "people": [p.id for p in self.tree.people.values() if s.id in p.sources],
         }, keep=("people",))
 
@@ -515,7 +525,7 @@ class Export:
             "schema": "doc/1", "id": d["id"], "title": clean(d["title"]), "path": clean(d["path"]),
             "meta": {k: clean(v) for k, v in d.get("meta", {}).items() if v} or None,
             "people": d.get("people") or None,
-            "media": [{"url": u, "kind": "photo", "private": private} for u, private in d.get("media", [])],
+            "media": [self.media_item(u, private) for u, private in d.get("media", [])],
             "files": [{"name": clean(n), "url": u} for n, u in d.get("files", [])],
             "audio": d.get("audio") or None,
             "md": self.text(d["md"]) if d.get("md") and not d.get("audio") else None})
