@@ -294,7 +294,7 @@ def photo(name):
     if not src:
         return None
     dst = OUT / "media" / (re.sub(r"[^\w.-]", "_", no_address_name(N(src.stem))) + ".jpg")
-    if not dst.exists():
+    if not dst.exists() or dst.stat().st_mtime < src.stat().st_mtime:   # снимок заменили под тем же именем — копию заново
         dst.parent.mkdir(parents=True, exist_ok=True)
         with Image.open(src) as im:
             im = ImageOps.exif_transpose(im).convert("RGB")
@@ -307,7 +307,7 @@ def thumb(src, small=False):
     """Уменьшенная копия конкретного файла: большая (для окна просмотра) или маленькая (для сетки превью)."""
     key = hashlib.md5(str(src).encode()).hexdigest()[:6] + "_" + re.sub(r"[^\w.-]", "_", no_address(N(src.stem)))[:80]
     dst = OUT / "media" / ("s" if small else "l") / (key + ".jpg")
-    if not dst.exists():
+    if not dst.exists() or dst.stat().st_mtime < src.stat().st_mtime:
         dst.parent.mkdir(parents=True, exist_ok=True)
         with Image.open(src) as im:
             im = ImageOps.exif_transpose(im).convert("RGB")
