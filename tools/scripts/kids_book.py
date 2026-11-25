@@ -2,14 +2,23 @@
 """Детская книжка-сказка → PDF: обложка, развороты (слева текст, справа картинка), последняя страница.
 
 Навык kids-story. Папка книги (в данных дерева) устроена так:
-  СКАЗКА_текст.md   — «## Обложка» (1-я строка — название, 2-я — подзаголовок), «## Разворот N. …», «## Последняя
+  СКАЗКА_текст.md   — «## Обложка» (1-я строка — название, 2-я — подзаголовок, 3-я — откуда книга, мельче), «## Разворот N. …», «## Последняя
                       страница. …»; абзацы — текст страницы; строки «*Картинка: …*» — что на картинке (в книгу не идут);
+                      «## Для взрослых. …» (en «For adults», es «Para adultos») — страницы без картинки в конце
+                      книги: справка для взрослых (где места тогда и сейчас); «**Имя** — …» в начале абзаца — жирным;
+                      абзац «![подпись](pages/book/схема.png)» — схема на всю ширину («![подпись|50%](…)» — уже, по центру); абзац в «*…*» — мелкая сноска
+                      «на чём основано»;
                       всё после «## По каким правилам» / «## Откуда факты» в книгу не идёт.
+                      «### Страница 1» / «### Страница 2» внутри разворота — две страницы «полстраницы»: картинка
+                      4:3 на всю ширину и короткий текст; на левой картинка сверху, на правой снизу; картинки —
+                      sNNa и sNNb. «## Карта. …» — разворот с картинкой map (её рисует kids_map.py).
+                      Другой язык — свой файл (--text): «## Cover / Spread N / Last page» (английский),
+                      «## Portada / Desplegable N / Última página» (испанский); картинки те же.
   pages/book/<id>.png|jpg|jpeg — картинки: cover, s01…sNN, last. Нет картинки — на её месте рамка с описанием,
                       так картинки можно вставлять по одной и пересобирать книгу.
 Поля, которые генератор рисует сам (ровная полоса по краю), срезаются; горизонтальная картинка вписывается целиком.
 
-Запуск:  tools/py tools/scripts/kids_book.py <папка книги> [--out имя.pdf] [--page 1792]
+Запуск:  tools/py tools/scripts/kids_book.py <папка книги> [--text STORY_text_en.md] [--out имя.pdf] [--page 1792]
 """
 import argparse
 import re
@@ -19,12 +28,20 @@ from PIL import Image, ImageChops, ImageDraw, ImageFont
 
 SERIF = "/System/Library/Fonts/Supplemental/PTSerif.ttc"  # macOS; другой шрифт с кириллицей — --font
 PAPER, INK, ACCENT, FRAME = (247, 240, 226), (58, 46, 38), (150, 62, 40), (200, 188, 168)
-STOP = ("## По каким правилам", "## Откуда факты")
+STOP = ("## По каким правилам", "## Откуда факты", "## How it was written", "## Sources", "## Cómo se escribió",
+        "## Fuentes")
+SPREAD = r"(?:Разворот|Spread|Desplegable) (\d+)"
+COVER = ("Обложка", "Cover", "Portada")
+ADULTS = ("Для взрослых", "For adults", "Para adultos")
+MAP = ("Карта", "Map", "Mapa")
+PIC = ("*Картинка", "*Picture", "*Imagen")
+PLACEHOLDER = {"ru": "Здесь будет картинка", "en": "Picture goes here", "es": "Aquí irá la imagen"}
 
 
 class Book:
-    def __init__(self, folder: Path, page_w: int, font_path: str):
-        self.dir, self.font_path = folder, font_path
+    def __init__(self, folder: Path, page_w: int, font_path: str, text_file: str = "СКАЗКА_текст.md"):
+        self.dir, self.font_path, self.text_file = folder, font_path, text_file
+        self.lang = "ru"
         self.K = page_w / 768  # все размеры заданы для страницы 768 px и масштабируются
         self.W, self.H, self.M = page_w, round(page_w * 4 / 3) - 1, round(70 * self.K)
 
@@ -36,33 +53,48 @@ class Book:
 
     # --- текст -------------------------------------------------------------------------------------------------
     def parse(self):
-        text = (self.dir / "СКАЗКА_текст.md").read_text()
+        text = (self.dir / self.text_file).read_text()
+        self.lang = "en" if "\n## Cover" in text else "es" if "\n## Portada" in text else "ru"
         for stop in STOP:
             text = text.split(stop)[0]
         out = []
         for block in re.split(r"\n## ", text)[1:]:
             head, *body = block.strip().splitlines()
-            m = re.match(r"Разворот (\d+)", head)
-            pid = f"s{int(m.group(1)):02d}" if m else "cover" if head.startswith("Обложка") else "last"
-            paras, buf, desc, in_pic = [], [], [], False
-            for ln in body + [""]:
-                s = ln.strip()
-                if s.startswith("*Картинка"):
-                    in_pic = not s.endswith("*") or s == "*Картинка"
-                    desc.append(s.strip("*"))
-                    continue
-                if in_pic:
-                    in_pic = not s.endswith("*")
-                    desc.append(s.strip("*"))
-                    continue
-                if s in ("", "---"):
-                    if buf:
-                        paras.append(" ".join(buf))
-                        buf = []
-                    continue
-                buf.append(s)
-            out.append((pid, head.split(". ", 1)[-1], paras, " ".join(desc)))
+            m = re.match(SPREAD, head)
+            pid = (f"s{int(m.group(1)):02d}" if m else "cover" if head.startswith(COVER)
+                   else "adults" if head.startswith(ADULTS) else "map" if head.startswith(MAP) else "last")
+            chunks = [[]]  # «### Страница 1/2» делит разворот на две страницы: картинка + текст на каждой
+            for ln in body:
+                if ln.startswith("### "):
+                    chunks.append([])
+                else:
+                    chunks[-1].append(ln)
+            halves = [self.chunk(c) for c in chunks[1:3]] if len(chunks) > 2 else None
+            paras, desc = self.chunk(chunks[0]) if not halves else ([], "")
+            out.append((pid, head.split(". ", 1)[-1], paras, desc, halves))
         return out
+
+    @staticmethod
+    def chunk(lines):
+        """Строки одной страницы → (абзацы текста, описание картинки)."""
+        paras, buf, desc, in_pic = [], [], [], False
+        for ln in lines + [""]:
+            s = ln.strip()
+            if s.startswith(PIC):
+                in_pic = not s.endswith("*") or s in PIC
+                desc.append(s.strip("*"))
+                continue
+            if in_pic:
+                in_pic = not s.endswith("*")
+                desc.append(s.strip("*"))
+                continue
+            if s in ("", "---"):
+                if buf:
+                    paras.append(" ".join(buf))
+                    buf = []
+                continue
+            buf.append(s)
+        return paras, " ".join(desc)
 
     @staticmethod
     def wrap(d, text, f, width):
@@ -106,7 +138,7 @@ class Book:
         d = ImageDraw.Draw(im)
         d.rectangle([20, 20, size[0] - 20, size[1] - 20], outline=FRAME, width=round(4 * K))
         f = self.font(26, italic=True)
-        lines = ["Здесь будет картинка", f"({pid})", ""] + self.wrap(d, desc.replace("Картинка", "").strip(" :—"), f,
+        lines = [PLACEHOLDER[self.lang], f"({pid})", ""] + self.wrap(d, desc.replace("Картинка", "").strip(" :—"), f,
                                                                     size[0] - 120 * K)
         y = (size[1] - round(38 * K) * len(lines)) // 2
         for ln in lines:
@@ -135,29 +167,166 @@ class Book:
         d.text((W // 2, H - round(50 * K)), str(num), font=self.font(22), fill=INK, anchor="mm")
         return pg
 
+    def half_page(self, pid, paras, desc, num, pic_top):
+        """Страница «полстраницы»: картинка 4:3 на всю ширину (сверху или снизу) и короткий текст под/над ней."""
+        K, W, H, M = self.K, self.W, self.H, self.M
+        ph = round(W * 3 / 4)
+        pg = Image.new("RGB", (W, H), PAPER)
+        pic, ok = self.picture(pid, desc, (W, ph))
+        pg.paste(pic, (0, 0 if pic_top else H - ph))
+        d = ImageDraw.Draw(pg)
+        top, bottom = (ph + round(30 * K), H - round(70 * K)) if pic_top else (round(50 * K), H - ph - round(30 * K))
+        size = 27
+        while True:  # длинный текст — шрифт мельче
+            f = self.font(size)
+            step, gap = round(size * 1.38 * K), round(12 * K)
+            lines = [ln for p in paras for ln in self.wrap(d, p, f, W - 2 * M) + [None]][:-1]
+            if sum(step if ln else gap for ln in lines) <= bottom - top or size <= 18:
+                break
+            size -= 1
+        y = top + (bottom - top - sum(step if ln else gap for ln in lines)) // 2
+        for ln in lines:
+            if ln:
+                d.text((M, y), ln, font=f, fill=INK)
+            y += step if ln else gap
+        ny = H - round(40 * K) if pic_top else round(25 * K)  # номер — в свободном от картинки поле
+        d.text((W // 2, ny), str(num), font=self.font(20), fill=INK, anchor="mm",
+               stroke_width=round(2 * K), stroke_fill=PAPER)
+        return pg, ok
+
+    def info_pages(self, title, paras):
+        """Справка для взрослых: заголовок, абзацы мелким шрифтом, сколько страниц понадобится.
+
+        Абзац «![подпись](путь)» — картинка (схема) на всю ширину, путь — от папки книги; абзац целиком в «*…*» —
+        сноска ещё мельче курсивом: на чём основано сказанное абзацем выше.
+        """
+        K, W, H, M = self.K, self.W, self.H, self.M
+        f, fb, ft = self.font(21), self.font(21, bold=True), self.font(30, bold=True)
+        fs = self.font(15, italic=True)
+        step, gap, sstep = round(21 * 1.4 * K), round(16 * K), round(15 * 1.35 * K)
+        d = ImageDraw.Draw(Image.new("RGB", (W, H)))
+        blocks = [[("title", ln) for ln in self.wrap(d, title, ft, W - 2 * M)]]
+        for p in paras:
+            im = re.match(r"!\[(.*?)\]\((.+?)\)$", p)
+            if im:
+                path = self.dir / im.group(2)
+                if path.exists():
+                    pic = self.trim(Image.open(path).convert("RGB"))
+                    wm = re.search(r"\|(\d+)%$", im.group(1))  # «![подпись|50%](…)» — уже на всю ширину
+                    r = (W - 2 * M) * (int(wm.group(1)) / 100 if wm else 1) / pic.width
+                    blocks.append([("image", pic.resize((round(pic.width * r), round(pic.height * r)), Image.LANCZOS))])
+                continue
+            if p.startswith("*") and p.endswith("*") and not p.startswith("**"):
+                blocks.append([("small", ln) for ln in self.wrap(d, p.strip("*"), fs, W - 2 * M)])
+                continue
+            m = re.match(r"\*\*(.+?)\*\*(.*)", p)
+            head, rest = (m.group(1), m.group(2).strip()) if m else ("", p)
+            blk = [("bold", ln) for ln in self.wrap(d, head, fb, W - 2 * M)] if head else []
+            blk += [("text", ln) for ln in self.wrap(d, rest, f, W - 2 * M)] if rest else []
+            blocks.append(blk)
+
+        def hgt(k, ln):
+            return (ln.height + round(10 * K) if k == "image" else round(42 * K) if k == "title"
+                    else sstep if k == "small" else step)
+
+        bottom = H - M - 40 * K
+        pages, cur, y = [], [], M
+        for bi, blk in enumerate(blocks):
+            if cur:
+                y += round(4 * K) if blk and blk[0][0] == "small" else gap  # сноска — вплотную к своему абзацу
+            need = sum(hgt(k, ln) for k, ln in blk)
+            if y + need > bottom and cur:
+                fit = 0  # сколько строк влезает на эту страницу
+                yy = y
+                for k, ln in blk:
+                    if yy + hgt(k, ln) > bottom:
+                        break
+                    yy += hgt(k, ln)
+                    fit += 1
+                heads = sum(1 for k, _ in blk if k in ("title", "bold"))
+                # абзац не рвём, если на странице остаётся меньше двух строк текста или на новую уходит одна;
+                # картинку не рвём никогда
+                if fit - heads < 2 or len(blk) - fit < 2 or blk[0][0] == "image":
+                    fit = 0
+                for k, ln in blk[:fit]:
+                    cur.append((k, ln, y))
+                    y += hgt(k, ln)
+                pages.append(cur)
+                cur, y = [], M
+                blk = blk[fit:]
+            for k, ln in blk:
+                cur.append((k, ln, y))
+                y += hgt(k, ln)
+        pages.append(cur)
+        out = []
+        for items_ in pages:
+            pg = Image.new("RGB", (W, H), PAPER)
+            dd = ImageDraw.Draw(pg)
+            for kind, ln, y in items_:
+                if kind == "image":
+                    pg.paste(ln, ((W - ln.width) // 2, y))
+                else:
+                    dd.text((M, y), ln, font={"title": ft, "bold": fb, "small": fs}.get(kind, f),
+                            fill=ACCENT if kind == "title" else (110, 95, 80) if kind == "small" else INK)
+            out.append(pg)
+        return out
+
     def cover(self, title, paras, desc):
         K, W, H, M = self.K, self.W, self.H, self.M
         pic, _ = self.picture("cover", desc, (W, H))
         d = ImageDraw.Draw(pic)
         name = paras[0].strip("*") if paras else title
         sub = paras[1].strip("*") if len(paras) > 1 else ""
-        f = self.font(58, bold=True)
-        y = round(90 * K)
-        for ln in self.wrap(d, name, f, W - 2 * M):
+        size = 58  # длинное название (испанское) — мельче, чтобы не больше двух строк и не на лицах
+        while True:
+            f = self.font(size, bold=True)
+            lines = self.wrap(d, name, f, W - 2 * M)
+            if len(lines) <= 2 or size <= 36:
+                break
+            size -= 2
+        y = round(28 * K)
+        for ln in lines:
             d.text((W // 2, y), ln, font=f, fill=ACCENT, anchor="ma", stroke_width=round(3 * K), stroke_fill=PAPER)
-            y += round(70 * K)
+            y += round(size * 1.2 * K)
+        note = paras[2].strip("*") if len(paras) > 2 else ""  # третья строка — откуда книга, мельче
         if sub:
-            d.text((W // 2, H - round(90 * K)), sub, font=self.font(28, italic=True), fill=INK, anchor="mm",
-                   stroke_width=round(2 * K), stroke_fill=PAPER)
+            d.text((W // 2, H - round(130 if note else 90) * K), sub, font=self.font(28, italic=True), fill=INK,
+                   anchor="mm", stroke_width=round(2 * K), stroke_fill=PAPER)
+        if note:
+            y = H - round(88 * K)
+            for ln in self.wrap(d, note, self.font(20, italic=True), W - 2 * M):
+                d.text((W // 2, y), ln, font=self.font(20, italic=True), fill=INK, anchor="mm",
+                       stroke_width=round(2 * K), stroke_fill=PAPER)
+                y += round(28 * K)
         return pic
 
     def build(self, out: Path):
         pages, have, total = [], 0, 0
-        for pid, title, paras, desc in self.parse():
+        for pid, title, paras, desc, halves in self.parse():
             total += 1
+            if halves:
+                spread = Image.new("RGB", (self.W * 2, self.H), PAPER)
+                for j, (hp, hd) in enumerate(halves):
+                    pg, ok = self.half_page(f"{pid}{'ab'[j]}", hp, hd, 2 * len(pages) - 1 + j, pic_top=j == 0)
+                    have += ok
+                    spread.paste(pg, (self.W * j, 0))
+                total += len(halves) - 1
+                ImageDraw.Draw(spread).line([(self.W, 0), (self.W, self.H)], fill=FRAME, width=round(2 * self.K))
+                pages.append(spread)
+                continue
             if pid == "cover":
                 pages.append(self.cover(title, paras, desc))
                 have += any((self.dir / "pages" / "book" / f"cover.{e}").exists() for e in ("png", "jpg", "jpeg"))
+                continue
+            if pid == "adults":
+                info = self.info_pages(title, paras)
+                for i in range(0, len(info), 2):
+                    spread = Image.new("RGB", (self.W * 2, self.H), PAPER)
+                    for j, pg in enumerate(info[i:i + 2]):
+                        spread.paste(pg, (self.W * j, 0))
+                    ImageDraw.Draw(spread).line([(self.W, 0), (self.W, self.H)], fill=FRAME, width=round(2 * self.K))
+                    pages.append(spread)
+                total -= 1
                 continue
             spread = Image.new("RGB", (self.W * 2, self.H), PAPER)
             spread.paste(self.text_page(paras, 1 + 2 * (len(pages) - 1)), (0, 0))
@@ -173,13 +342,14 @@ class Book:
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("folder", type=Path, help="папка книги (там СКАЗКА_текст.md и pages/book/)")
+    ap.add_argument("--text", default="СКАЗКА_текст.md", help="файл текста в папке книги (другой язык — свой файл)")
     ap.add_argument("--out", help="имя PDF в pages/ (по умолчанию — книга.pdf)", default="книга.pdf")
     ap.add_argument("--page", type=int, default=1792, help="ширина страницы в точках (1792 — полный размер Gemini)")
     ap.add_argument("--font", default=SERIF, help="шрифт с засечками и кириллицей (.ttc/.ttf)")
     a = ap.parse_args()
     folder = a.folder.resolve()
     (folder / "pages" / "book").mkdir(parents=True, exist_ok=True)
-    Book(folder, a.page, a.font).build(folder / "pages" / a.out)
+    Book(folder, a.page, a.font, a.text).build(folder / "pages" / a.out)
 
 
 if __name__ == "__main__":
