@@ -80,6 +80,14 @@ export async function onRequest({ request, env, next }) {
   if (path === '/robots.txt') {
     return new Response(ROBOTS, { headers: { 'Content-Type': 'text/plain', ...HIDDEN } })
   }
+  // Детские книжки (kids_book.py --web) — без пароля всегда: в них нет адресов и документов, ссылку шлют родне
+  // в мессенджер, а пароль сайта вернётся после open_until. Поисковикам закрыто (robots.txt и noindex на странице).
+  if (path === '/books' || path.startsWith('/books/')) {
+    const res = await next()
+    const out = new Response(res.body, res)
+    for (const [k, v] of Object.entries(HIDDEN)) out.headers.set(k, v)
+    return out
+  }
   const open = isOpen(request, env), user = loggedIn(request, env)
   // /login — войти по имени и паролю, даже когда сайт открыт: после входа браузер сам подставляет их ко всем файлам сайта
   // адрес без имени сайта: иначе через Netlify (адрес для Беларуси) браузер ушёл бы на адрес Cloudflare Pages, который там режут

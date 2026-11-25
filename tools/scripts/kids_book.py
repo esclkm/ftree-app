@@ -19,9 +19,14 @@
 Поля, которые генератор рисует сам (ровная полоса по краю), срезаются; горизонтальная картинка вписывается целиком.
 
 Запуск:  tools/py tools/scripts/kids_book.py <папка книги> [--text STORY_text_en.md] [--out имя.pdf] [--page 1792]
+         [--web имя]  — ещё и страница-лента для сайта: каждая страница отдельной картинкой одна под другой, без
+                        оформления сайта; кладётся в выгрузку сайта books/<имя>/ (с PDF рядом), список книг — books/.
+                        Пароль сайта на /books/ не спрашивается (functions/_middleware.js). Ширину для ленты хватает 1024.
 """
 import argparse
+import html
 import re
+import shutil
 from pathlib import Path
 
 from PIL import Image, ImageChops, ImageDraw, ImageFont
@@ -302,7 +307,7 @@ class Book:
                 y += round(28 * K)
         return pic
 
-    def build(self, out: Path):
+    def build(self, out: Path, web: str = ""):
         pages, have, total = [], 0, 0
         for pid, title, paras, desc, halves in self.parse():
             total += 1
@@ -339,6 +344,58 @@ class Book:
             pages.append(spread)
         pages[0].save(out, save_all=True, append_images=pages[1:], resolution=300, quality=92)
         print(f"{out} — страниц/разворотов: {len(pages)}, картинок есть: {have} из {total}")
+        if web:
+            self.web(pages, out, web)
+
+    def web(self, pages, pdf: Path, slug: str):
+        """Лента для телефона: разворот режется на две страницы, страницы — картинками одна под другой."""
+        import paths  # noqa: PLC0415 — нужен только для ленты
+        books = paths.SITE_EXPORT / "books"
+        d = books / slug
+        if d.exists():
+            shutil.rmtree(d)
+        d.mkdir(parents=True)
+        singles = []
+        for pg in pages:
+            if pg.width > pg.height * 1.1:
+                singles += [pg.crop((0, 0, pg.width // 2, pg.height)), pg.crop((pg.width // 2, 0, pg.width, pg.height))]
+            else:
+                singles.append(pg)
+        imgs = []
+        for i, pg in enumerate(singles, 1):
+            name = f"{i:02d}.jpg"
+            pg.convert("RGB").save(d / name, quality=82, optimize=True)
+            imgs.append(f'<img src="{name}" width="{pg.width}" height="{pg.height}" loading="{"eager" if i < 3 else "lazy"}" alt="">')
+        shutil.copyfile(pdf, d / "book.pdf")
+        title = next((p[0].strip("*") for pid, _, p, _, _ in self.parse() if pid == "cover" and p), slug)
+        (d / "title.txt").write_text(title, encoding="utf-8")
+        pdf_word = {"ru": "Скачать PDF", "pl": "Pobierz PDF", "es": "Descargar PDF", "en": "Download PDF"}[self.lang]
+        (d / "index.html").write_text(PAGE.format(lang=self.lang, title=html.escape(title), body="\n".join(imgs),
+                                                  foot=f'<a href="book.pdf">{pdf_word}</a>'), encoding="utf-8")
+        links = [f'<li><a href="{x.name}/">{html.escape((x / "title.txt").read_text(encoding="utf-8"))}</a></li>'
+                 for x in sorted(books.iterdir()) if (x / "title.txt").exists()]
+        (books / "index.html").write_text(PAGE.format(lang="ru", title="Книжки", body="<ul>" + "".join(links) + "</ul>",
+                                                      foot=""), encoding="utf-8")
+        print(f"лента: {d} — страниц {len(singles)}; на сайте /books/{slug}/ после выкладки (rodo site all)")
+
+
+PAGE = """<!doctype html>
+<html lang="{lang}"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>{title}</title>
+<style>
+body{{margin:0;background:#f7f0e2;color:#3a2e26;font:18px/1.5 Georgia,serif}}
+main{{max-width:900px;margin:0 auto}}
+img{{display:block;width:100%;height:auto;margin:0 0 6px}}
+ul{{padding:24px 16px 0 36px}} li{{margin:0 0 12px}}
+a{{color:#963e28}} footer{{text-align:center;padding:24px 16px 40px}}
+</style></head>
+<body><main>
+{body}
+<footer>{foot}</footer>
+</main></body></html>
+"""
 
 
 def main():
@@ -348,10 +405,13 @@ def main():
     ap.add_argument("--out", help="имя PDF в pages/ (по умолчанию — книга.pdf)", default="книга.pdf")
     ap.add_argument("--page", type=int, default=1792, help="ширина страницы в точках (1792 — полный размер Gemini)")
     ap.add_argument("--font", default=SERIF, help="шрифт с засечками и кириллицей (.ttc/.ttf)")
+    ap.add_argument("--web", default="", help="имя ленты на сайте: books/<имя>/ в выгрузке сайта (латиницей)")
     a = ap.parse_args()
     folder = a.folder.resolve()
     (folder / "pages" / "book").mkdir(parents=True, exist_ok=True)
-    Book(folder, a.page, a.font, a.text).build(folder / "pages" / a.out)
+    if a.web and not re.fullmatch(r"[a-z0-9-]+", a.web):
+        ap.error("--web: только латиница, цифры и дефис")
+    Book(folder, a.page, a.font, a.text).build(folder / "pages" / a.out, a.web)
 
 
 if __name__ == "__main__":

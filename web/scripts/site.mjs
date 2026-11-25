@@ -26,7 +26,7 @@ export const WEB = join(dirname(fileURLToPath(import.meta.url)), '..')
 const ASSETS = join(WEB, 'site_assets')
 const SCHEMA = join(WEB, 'schema')
 // что лежит в папке сайта; остальное (старые страницы people/, docs/, *.js данных прежних страниц) — удаляется
-const MIRRORED = ['data', 'media', 'files']  // из выгрузки, как есть
+const MIRRORED = ['data', 'media', 'files', 'books']  // из выгрузки, как есть; books — ленты детских книжек (kids_book.py --web)
 const KEEP = new Set([...MIRRORED, 'assets', 'functions', 'index.html'])
 const ICLOUD_COPY = / \d+(\.\w+)?$/  // «people 2», «index 2.json» — копии, которые оставляет iCloud
 
