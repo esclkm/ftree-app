@@ -318,7 +318,6 @@ class Book:
                     have += ok
                     spread.paste(pg, (self.W * j, 0))
                 total += len(halves) - 1
-                ImageDraw.Draw(spread).line([(self.W, 0), (self.W, self.H)], fill=FRAME, width=round(2 * self.K))
                 pages.append(spread)
                 continue
             if pid == "cover":
@@ -331,7 +330,6 @@ class Book:
                     spread = Image.new("RGB", (self.W * 2, self.H), PAPER)
                     for j, pg in enumerate(info[i:i + 2]):
                         spread.paste(pg, (self.W * j, 0))
-                    ImageDraw.Draw(spread).line([(self.W, 0), (self.W, self.H)], fill=FRAME, width=round(2 * self.K))
                     pages.append(spread)
                 total -= 1
                 continue
@@ -340,7 +338,6 @@ class Book:
             pic, ok = self.picture(pid, desc, (self.W, self.H))
             have += ok
             spread.paste(pic, (self.W, 0))
-            ImageDraw.Draw(spread).line([(self.W, 0), (self.W, self.H)], fill=FRAME, width=round(2 * self.K))
             pages.append(spread)
         pages[0].save(out, save_all=True, append_images=pages[1:], resolution=300, quality=92)
         print(f"{out} — страниц/разворотов: {len(pages)}, картинок есть: {have} из {total}")
@@ -369,16 +366,26 @@ class Book:
         shutil.copyfile(pdf, d / "book.pdf")
         title = next((p[0].strip("*") for pid, _, p, _, _ in self.parse() if pid == "cover" and p), slug)
         (d / "title.txt").write_text(title, encoding="utf-8")
+        (d / "lang.txt").write_text(self.lang, encoding="utf-8")
+        (d / "book.txt").write_text(self.dir.name, encoding="utf-8")  # одна книга на разных языках — рядом в списке
         pdf_word = {"ru": "Скачать PDF", "pl": "Pobierz PDF", "es": "Descargar PDF", "en": "Download PDF"}[self.lang]
         (d / "index.html").write_text(PAGE.format(lang=self.lang, title=html.escape(title), body="\n".join(imgs),
                                                   foot=f'<a href="book.pdf">{pdf_word}</a>'), encoding="utf-8")
-        links = [f'<li><a href="{x.name}/">{html.escape((x / "title.txt").read_text(encoding="utf-8"))}</a></li>'
-                 for x in sorted(books.iterdir()) if (x / "title.txt").exists()]
+        def row(x):
+            lang = (x / "lang.txt").read_text(encoding="utf-8") if (x / "lang.txt").exists() else "ru"
+            name = html.escape((x / "title.txt").read_text(encoding="utf-8"))
+            return (f'<li><a href="{x.name}/">{name}</a> <span class="lang">{LANG_NAME.get(lang, lang)}</span>'
+                    f' · <a href="{x.name}/book.pdf">PDF</a></li>')
+        def order(x):
+            book = (x / "book.txt").read_text(encoding="utf-8") if (x / "book.txt").exists() else x.name
+            return book, (x / "lang.txt").exists() and (x / "lang.txt").read_text(encoding="utf-8") != "ru", x.name
+        links = [row(x) for x in sorted(books.iterdir(), key=order) if (x / "title.txt").exists()]
         (books / "index.html").write_text(PAGE.format(lang="ru", title="Книжки", body="<ul>" + "".join(links) + "</ul>",
                                                       foot=""), encoding="utf-8")
         print(f"лента: {d} — страниц {len(singles)}; на сайте /books/{slug}/ после выкладки (rodo site all)")
 
 
+LANG_NAME = {"ru": "русский", "pl": "polski", "es": "español", "en": "English"}  # в списке книг — язык своим словом
 PAGE = """<!doctype html>
 <html lang="{lang}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -389,7 +396,7 @@ body{{margin:0;background:#f7f0e2;color:#3a2e26;font:18px/1.5 Georgia,serif}}
 main{{max-width:900px;margin:0 auto}}
 img{{display:block;width:100%;height:auto;margin:0 0 6px}}
 ul{{padding:24px 16px 0 36px}} li{{margin:0 0 12px}}
-a{{color:#963e28}} footer{{text-align:center;padding:24px 16px 40px}}
+a{{color:#963e28}} .lang{{color:#7a6a5c;font-size:15px}} footer{{text-align:center;padding:24px 16px 40px}}
 </style></head>
 <body><main>
 {body}
