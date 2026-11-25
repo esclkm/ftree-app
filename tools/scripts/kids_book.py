@@ -13,8 +13,8 @@
                       4:3 на всю ширину и короткий текст; на левой картинка сверху, на правой снизу; картинки —
                       sNNa и sNNb. «## Карта. …» — разворот с картинкой map (её рисует kids_map.py).
                       Другой язык — свой файл (--text): «## Cover / Spread N / Last page» (английский),
-                      «## Portada / Desplegable N / Última página» (испанский); картинки те же.
-  pages/book/<id>.png|jpg|jpeg — картинки: cover, s01…sNN, last. Нет картинки — на её месте рамка с описанием,
+                      «## Portada / Desplegable N / Última página» (испанский), «## Okładka / Rozkładówka N / Ostatnia strona» (польский); картинки те же.
+  pages/book/<id>.png|jpg|jpeg — картинки: cover, s01…sNN, last (для другого языка сначала ищется <id>_<язык>, напр. map_pl). Нет картинки — на её месте рамка с описанием,
                       так картинки можно вставлять по одной и пересобирать книгу.
 Поля, которые генератор рисует сам (ровная полоса по краю), срезаются; горизонтальная картинка вписывается целиком.
 
@@ -29,13 +29,13 @@ from PIL import Image, ImageChops, ImageDraw, ImageFont
 SERIF = "/System/Library/Fonts/Supplemental/PTSerif.ttc"  # macOS; другой шрифт с кириллицей — --font
 PAPER, INK, ACCENT, FRAME = (247, 240, 226), (58, 46, 38), (150, 62, 40), (200, 188, 168)
 STOP = ("## По каким правилам", "## Откуда факты", "## How it was written", "## Sources", "## Cómo se escribió",
-        "## Fuentes")
-SPREAD = r"(?:Разворот|Spread|Desplegable) (\d+)"
-COVER = ("Обложка", "Cover", "Portada")
-ADULTS = ("Для взрослых", "For adults", "Para adultos")
+        "## Fuentes", "## Skąd fakty", "## Jak powstała")
+SPREAD = r"(?:Разворот|Spread|Desplegable|Rozkładówka) (\d+)"
+COVER = ("Обложка", "Cover", "Portada", "Okładka")
+ADULTS = ("Для взрослых", "For adults", "Para adultos", "Dla dorosłych")
 MAP = ("Карта", "Map", "Mapa")
-PIC = ("*Картинка", "*Picture", "*Imagen")
-PLACEHOLDER = {"ru": "Здесь будет картинка", "en": "Picture goes here", "es": "Aquí irá la imagen"}
+PIC = ("*Картинка", "*Picture", "*Imagen", "*Obrazek")
+PLACEHOLDER = {"ru": "Здесь будет картинка", "en": "Picture goes here", "es": "Aquí irá la imagen", "pl": "Tu będzie obrazek"}
 
 
 class Book:
@@ -54,7 +54,7 @@ class Book:
     # --- текст -------------------------------------------------------------------------------------------------
     def parse(self):
         text = (self.dir / self.text_file).read_text()
-        self.lang = "en" if "\n## Cover" in text else "es" if "\n## Portada" in text else "ru"
+        self.lang = "en" if "\n## Cover" in text else "es" if "\n## Portada" in text else "pl" if "\n## Okładka" in text else "ru"
         for stop in STOP:
             text = text.split(stop)[0]
         out = []
@@ -120,8 +120,8 @@ class Book:
 
     def picture(self, pid, desc, size):
         K = self.K
-        for ext in ("png", "jpg", "jpeg"):
-            p = self.dir / "pages" / "book" / f"{pid}.{ext}"
+        names = [f"{pid}_{self.lang}", pid] if self.lang != "ru" else [pid]  # map_pl.png — своя карта для языка
+        for p in [self.dir / "pages" / "book" / f"{n}.{e}" for n in names for e in ("png", "jpg", "jpeg")]:
             if p.exists():
                 im = self.trim(Image.open(p).convert("RGB"))
                 if abs(im.width / im.height - size[0] / size[1]) < 0.12:  # та же форма — на всю страницу
@@ -184,6 +184,8 @@ class Book:
             if sum(step if ln else gap for ln in lines) <= bottom - top or size <= 18:
                 break
             size -= 1
+        if size < 25:  # заметно мельче соседних страниц — сократить текст или перенести абзац
+            print(f"⚠️ стр. {num} ({pid}): текст длинный, кегль {size} вместо 27")
         y = top + (bottom - top - sum(step if ln else gap for ln in lines)) // 2
         for ln in lines:
             if ln:
