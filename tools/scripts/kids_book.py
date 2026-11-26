@@ -11,7 +11,8 @@
                       всё после «## По каким правилам» / «## Откуда факты» в книгу не идёт.
                       «### Страница 1» / «### Страница 2» внутри разворота — две страницы «полстраницы»: картинка
                       4:3 на всю ширину и короткий текст; на левой картинка сверху, на правой снизу; картинки —
-                      sNNa и sNNb. «## Карта. …» — разворот с картинкой map (её рисует kids_map.py).
+                      sNNa и sNNb. «## Карта. …» — разворот с картинкой map (её рисует kids_map.py); без абзацев —
+                      одна страница: текст нарисован в самой карте.
                       Другой язык — свой файл (--text): «## Cover / Spread N / Last page» (английский),
                       «## Portada / Desplegable N / Última página» (испанский), «## Okładka / Rozkładówka N / Ostatnia strona» (польский); картинки те же.
   pages/book/<id>.png|jpg|jpeg — картинки: cover, s01…sNN, last (для другого языка сначала ищется <id>_<язык>, напр. map_pl). Нет картинки — на её месте рамка с описанием,
@@ -307,7 +308,18 @@ class Book:
                 y += round(28 * K)
         return pic
 
-    def build(self, out: Path, web: str = ""):
+    @staticmethod
+    def singles(pages):
+        """Развороты → отдельные страницы (левая, правая); одиночные (обложка) — как есть."""
+        out = []
+        for pg in pages:
+            if pg.width > pg.height * 1.1:
+                out += [pg.crop((0, 0, pg.width // 2, pg.height)), pg.crop((pg.width // 2, 0, pg.width, pg.height))]
+            else:
+                out.append(pg)
+        return out
+
+    def build(self, out: Path, web: str = "", single: bool = False):
         pages, have, total = [], 0, 0
         for pid, title, paras, desc, halves in self.parse():
             total += 1
@@ -333,13 +345,19 @@ class Book:
                     pages.append(spread)
                 total -= 1
                 continue
+            if pid == "map" and not paras:  # карта без абзацев: текст нарисован в самой карте — одна страница
+                pic, ok = self.picture(pid, desc, (self.W, self.H))
+                have += ok
+                pages.append(pic)
+                continue
             spread = Image.new("RGB", (self.W * 2, self.H), PAPER)
             spread.paste(self.text_page(paras, 1 + 2 * (len(pages) - 1)), (0, 0))
             pic, ok = self.picture(pid, desc, (self.W, self.H))
             have += ok
             spread.paste(pic, (self.W, 0))
             pages.append(spread)
-        pages[0].save(out, save_all=True, append_images=pages[1:], resolution=300, quality=92)
+        pdf_pages = self.singles(pages) if single else pages
+        pdf_pages[0].save(out, save_all=True, append_images=pdf_pages[1:], resolution=300, quality=92)
         print(f"{out} — страниц/разворотов: {len(pages)}, картинок есть: {have} из {total}")
         if web:
             self.web(pages, out, web)
@@ -352,12 +370,7 @@ class Book:
         if d.exists():
             shutil.rmtree(d)
         d.mkdir(parents=True)
-        singles = []
-        for pg in pages:
-            if pg.width > pg.height * 1.1:
-                singles += [pg.crop((0, 0, pg.width // 2, pg.height)), pg.crop((pg.width // 2, 0, pg.width, pg.height))]
-            else:
-                singles.append(pg)
+        singles = self.singles(pages)
         imgs = []
         for i, pg in enumerate(singles, 1):
             name = f"{i:02d}.jpg"
@@ -412,13 +425,14 @@ def main():
     ap.add_argument("--out", help="имя PDF в pages/ (по умолчанию — книга.pdf)", default="книга.pdf")
     ap.add_argument("--page", type=int, default=1792, help="ширина страницы в точках (1792 — полный размер Gemini)")
     ap.add_argument("--font", default=SERIF, help="шрифт с засечками и кириллицей (.ttc/.ttf)")
+    ap.add_argument("--single", action="store_true", help="PDF по одной странице, а не разворотами (для телефона)")
     ap.add_argument("--web", default="", help="имя ленты на сайте: books/<имя>/ в выгрузке сайта (латиницей)")
     a = ap.parse_args()
     folder = a.folder.resolve()
     (folder / "pages" / "book").mkdir(parents=True, exist_ok=True)
     if a.web and not re.fullmatch(r"[a-z0-9-]+", a.web):
         ap.error("--web: только латиница, цифры и дефис")
-    Book(folder, a.page, a.font, a.text).build(folder / "pages" / a.out, a.web)
+    Book(folder, a.page, a.font, a.text).build(folder / "pages" / a.out, a.web, a.single)
 
 
 if __name__ == "__main__":
