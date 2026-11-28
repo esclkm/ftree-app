@@ -1,3 +1,4 @@
+@use '../../styles/mixins' as *;
 // Графики предков и семьи (charts/): веер, глубина линий, семья на шкале. Цвета — только переменными (тёмная тема).
 .anc-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 .anc-tabs { display: flex; gap: 6px; button { cursor: pointer; } }
@@ -20,6 +21,9 @@
   &.me { fill: var(--on-surface); stroke: none; }
   &.me.on { fill: var(--path); }
 }
+.fan-cell.sel path { stroke: var(--on-surface); stroke-width: 3; }
+.fan-full { fill: none; stroke: var(--like); stroke-width: 2.5; pointer-events: none; }
+.fan-gnum { font-family: var(--f-body); font-size: 12px; fill: var(--muted); }
 .fan-name { fill: var(--on-surface); pointer-events: none; font-weight: 700;
   .sur { font-weight: 400; font-size: .82em; fill: var(--muted); } }
 .fan-cell.on .fan-name { .sur { fill: var(--on-surface); } }
@@ -77,3 +81,57 @@
   i.own { height: 12px; border-radius: 2px; background: color-mix(in srgb, var(--like) 18%, transparent); }
   i.m { background: var(--male); } i.f { background: var(--female); }
   i.wed { width: 10px; height: 10px; border-radius: 50%; background: var(--like); } }
+.fan-cell.me.pick { cursor: pointer; }
+
+// «Исследовать» (pages/Explore.tsx): веер и родня слева, карточка выбранного справа
+.anc-card h2 { display: flex; align-items: center; gap: 8px; .anc-explore { margin-left: auto; font-size: 14px; } }
+.explore { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start;
+  @media (max-width: 1000px) { grid-template-columns: minmax(0, 1fr); } }
+.ex-main { display: grid; gap: 16px; min-width: 0; }
+// узкий экран: карточка выбранного — сразу под веером, иначе после нажатия её не видно
+@media (max-width: 1000px) { .ex-main { display: contents; } .ex-fan { order: 1; } .ex-side { order: 2; } .ex-below { order: 3; min-width: 0; } }
+.ex-fan h2 { margin-bottom: 2px; }
+.ex-nums { display: flex; flex-wrap: wrap; gap: 6px 22px; margin-top: 10px; border-top: 1px solid var(--outline); padding-top: 10px;
+  b { font-size: 26px; font-family: var(--f-display); } .hot b { color: var(--like); } }
+.ex-recent { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 10px; }
+.ex-chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--outline); background: var(--surface-1); color: var(--on-surface);
+  border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 14px; cursor: pointer;
+  &:hover { background: var(--surface-2); } &.on { border-color: var(--like); color: var(--like); }
+  i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  &.m i { background: var(--male); } &.f i { background: var(--female); }
+  small { color: var(--muted); } }
+.ex-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 12px; font-size: 13px; color: var(--muted);
+  span { display: inline-flex; align-items: center; gap: 6px; }
+  i { display: inline-block; width: 12px; height: 22px; border-radius: 3px; border: 1px solid var(--outline); }
+  i.dad { background: color-mix(in srgb, var(--male) 45%, var(--card)); } i.mom { background: color-mix(in srgb, var(--female) 45%, var(--card)); }
+  i.gap { background: var(--surface-2); border-style: dashed; } i.sel { background: var(--card); border: 2px solid var(--on-surface); }
+  i.full { background: var(--like); border: 0; width: 12px; } }
+.ex-side { position: sticky; top: 76px; display: grid; gap: 10px;
+  h2 { margin: 0; } h3 { margin: 6px 0 0; font-size: 14px; color: var(--muted); }
+  @media (max-width: 1000px) { position: static; } }
+.ex-head { display: flex; gap: 14px; align-items: center; }
+.ex-ava { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; flex: none; display: inline-flex; align-items: center; justify-content: center;
+  font-size: 24px; font-family: var(--f-display); &.ph { @include ph-colors; } }
+.ex-age { margin: 0; font-weight: 700; font-size: 18px; }
+.ex-evs { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 10px; border-block: 1px solid var(--outline); padding: 10px 0; }
+.ex-ev { display: grid; align-content: start; gap: 2px; font-size: 14px; b { font-size: 16px; } }
+.linkish { border: 0; background: none; padding: 0; font: inherit; color: var(--primary); text-decoration: underline; cursor: pointer; text-align: left; }
+.ex-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ex-stats { display: flex; flex-wrap: wrap; gap: 6px; a { background: var(--surface-1); border-radius: 8px; padding: 4px 10px; font-size: 14px; } }
+.ex-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px;
+  .btn.go { background: var(--like); color: #fff; } button.btn { border: 0; cursor: pointer; font: inherit; font-weight: 500; font-size: 14px; } }
+.ex-below .anc-tabs { margin-bottom: 12px; }
+.ped { display: grid; gap: 10px; }
+.ped-row { display: grid; grid-template-columns: 110px 1fr; align-items: center; gap: 10px;
+  @media (max-width: 700px) { grid-template-columns: 1fr; } }
+.ped-label { font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+.ped-cells { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.ped-pair { flex: 1; display: flex; gap: 8px; justify-content: center; }
+.ped-box { min-width: 110px; max-width: 200px; display: grid; gap: 2px; padding: 6px 10px; border-radius: 10px; font: inherit; font-size: 13px;
+  border: 1px solid var(--outline); background: var(--surface-1); color: var(--on-surface); cursor: pointer; text-align: center;
+  small { color: var(--muted); } &:hover { background: var(--surface-2); }
+  &.m { border-left: 4px solid var(--male); } &.f { border-left: 4px solid var(--female); }
+  &.main { border: 2px solid var(--like); background: var(--like-bg); font-size: 15px; }
+  &.empty { cursor: default; border-style: dashed; color: var(--muted); background: transparent; } }
+// на телефоне в меню не помещается восьмой пункт — «Исследовать» открывается кнопкой на карточке «Предки»
+@include phone { .appbar nav a[href$="/explore"] { display: none; } }

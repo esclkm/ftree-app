@@ -56,7 +56,7 @@ export function Layout() {
     <header className="appbar" ref={bar}>
       <Link className="brand" to={href.home}><Icon name="tree" />{t('site')}</Link>
       <nav>
-        {([['nav_tree', '/tree', 'tree'], ['nav_map', '/map', 'map'], ['nav_people', '/people', 'fam'], ['nav_lifelines', '/lifelines', 'event'], ['nav_gallery', '/gallery', 'pics'], ['nav_sources', '/sources', 'source'], ['nav_news', '/news', 'history']] as const).map(([k, to, ic]) =>
+        {([['nav_tree', '/tree', 'tree'], ['nav_explore', '/explore', 'stats'], ['nav_map', '/map', 'map'], ['nav_people', '/people', 'fam'], ['nav_lifelines', '/lifelines', 'event'], ['nav_gallery', '/gallery', 'pics'], ['nav_sources', '/sources', 'source'], ['nav_news', '/news', 'history']] as const).map(([k, to, ic]) =>
           <NavLink key={k} to={href.at(to)} title={t(k)} end className={({isActive}) => isActive ? 'on' : undefined}><Icon name={ic} /><span>{t(k)}</span></NavLink>)}
       </nav>
       <div className="actions">

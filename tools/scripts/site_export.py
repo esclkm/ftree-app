@@ -664,6 +664,35 @@ fs_married|Свадьба|Ślub|Boda|Married
 fs_age|Прожил(а) {0} лет|Żył(a) {0} lat|Vivió {0} años|Lived {0} years
 fs_age_note|Число — возраст в год смерти|Liczba — wiek w roku śmierci|El número es la edad al morir|The number is the age they died
 fs_no_end|Год смерти неизвестен|Rok śmierci nieznany|Año de muerte desconocido|Year of death unknown
+nav_explore|Исследовать|Odkrywaj|Explorar|Explore
+ex_title|Исследовать родословную|Odkrywaj drzewo|Explorar el árbol|Explore your family tree
+ex_go|Исследовать|Odkrywaj|Explorar|Explore
+ex_hint|Нажмите на человека в веере — справа откроется его карточка|Kliknij osobę na wachlarzu — po prawej otworzy się jej karta|Pulse una persona en el abanico: a la derecha se abrirá su ficha|Click anyone on the fan to preview their story
+ex_showing|в веере|na wachlarzu|en el abanico|people showing
+ex_seen|уже смотрели|już obejrzane|ya vistos|you've looked at
+ex_left|ещё не смотрели|jeszcze nie obejrzane|aún por ver|still to meet
+ex_recent|Недавние|Ostatnie|Recientes|Recent
+ex_self|Центр веера|Środek wachlarza|Centro del abanico|Centre of the fan
+ex_died_at_m|Умер в {0} лет|Zmarł w wieku {0} lat|Murió a los {0} años|Died at {0}
+ex_died_at_f|Умерла в {0} лет|Zmarła w wieku {0} lat|Murió a los {0} años|Died at {0}
+ex_married|Брак|Małżeństwo|Matrimonio|Married
+ex_onpage|На странице человека|Na stronie osoby|En su página|On the full page
+ex_bio|биография|biografia|biografía|biography
+ex_facts|фактов: {0}|faktów: {0}|hechos: {0}|{0} facts
+ex_pics|фото: {0}|zdjęć: {0}|fotos: {0}|{0} photos
+ex_texts|текстов: {0}|tekstów: {0}|textos: {0}|{0} texts
+ex_open|Открыть страницу|Otwórz stronę|Abrir la página|Open full page
+ex_center|Сделать центром веера|Ustaw jako środek wachlarza|Poner en el centro|Put at the centre
+ex_pedigree|Ближняя родня|Najbliższa rodzina|Familia cercana|Pedigree
+ped_gp|Деды и бабушки|Dziadkowie|Abuelos|Grandparents
+ped_gkids|Внуки|Wnuki|Nietos|Grandchildren
+ped_more|и ещё {0}|i jeszcze {0}|y {0} más|and {0} more
+lg_dad|Сторона отца|Strona ojca|Lado del padre|Father's side
+lg_mom|Сторона матери|Strona matki|Lado de la madre|Mother's side
+lg_gap|Неизвестен — можно искать|Nieznany — można szukać|Desconocido: se puede buscar|Unknown — worth searching
+lg_sel|Выбран|Wybrany|Seleccionado|Selected
+lg_full|Все места заполнены до этой дуги|Wszystkie miejsca wypełnione do tego łuku|Todos los lugares completos hasta este arco|Every place filled up to this arc
+fan_full|все места заполнены до поколения {0}|wszystkie miejsca wypełnione do pokolenia {0}|todos los lugares completos hasta la generación {0}|every place filled through generation {0}
 stats_note|Цифры пересчитываются при каждой сборке сайта. «Поколений вглубь» — сколько поколений предков известно над дедом или бабушкой, с которых начинается род. Линия под числом — как род рос по дням. Подтверждения считаются по предкам: рождение и смерть каждого (у живых — только рождение).|Liczby są przeliczane przy każdej budowie strony. „Pokoleń w głąb” — ile pokoleń przodków znamy ponad dziadkiem lub babcią, od których zaczyna się ród. Linia pod liczbą — jak ród rósł dzień po dniu. Potwierdzenia liczone są dla przodków: narodziny i zgon każdego (u żyjących — tylko narodziny).|Las cifras se recalculan en cada compilación del sitio. «Generaciones atrás»: cuántas generaciones de antepasados se conocen por encima del abuelo o la abuela con que empieza la rama. La línea bajo la cifra muestra cómo creció la rama día a día. Las confirmaciones se cuentan para los antepasados: nacimiento y muerte de cada uno (de los vivos, solo el nacimiento).|The numbers are recalculated every time the site is built. "Generations back" is how many generations of ancestors are known above the grandparent the branch starts with. The line under the number shows how the branch grew day by day. Proof is counted for the ancestors: each one's birth and death (for the living, birth only).
 n_btn|Заметки|Notatki|Notas|Notes
 n_btn_title|Заметки для Claude|Notatki dla Claude|Notas para Claude|Notes for Claude

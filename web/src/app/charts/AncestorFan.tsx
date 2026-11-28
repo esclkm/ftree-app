@@ -28,17 +28,22 @@ function lines(full: string, room: number, fs: number): string[] {
   return w.length <= 1 ? [cut(w[0] ?? '')] : [cut(w[0]), cut(w.slice(1).join(' '))]
 }
 
-export function AncestorFan({id, ix, gens}: {id: string; ix: Lookup; gens: number}) {
+/** onPick — нажатие выбирает человека (страница «Исследовать»), без него — открывает его страницу; selected — выбранный */
+export function AncestorFan({id, ix, gens, onPick, selected}: {id: string; ix: Lookup; gens: number
+  onPick?: (p: IndexPerson) => void; selected?: string}) {
   const t = useT(), lang = useLang(), href = useLinks(), navigate = useNavigate()
   const {box, tip, show, hide} = useTip()
   const [hover, setHover] = useState(0)
   const slots = ancestorSlots(ix, id, gens)
   const radius = (g: number) => R0 + RING.slice(1, g + 1).reduce((a, b) => a + b, 0)
-  const R = radius(gens), W = 2 * (R + PAD), H = R + PAD + 30
+  const R = radius(gens), W = 2 * (R + PAD), H = R + PAD + 46
   const path = new Set<number>()
   for (let k = hover; k >= 1; k = k >> 1) path.add(k)
   const {known, total} = fanCount(slots, gens)
-  const go = (p: IndexPerson) => navigate(href.person(p.slug))
+  const go = (p: IndexPerson) => (onPick ? onPick(p) : navigate(href.person(p.slug)))
+  // до какого поколения заполнены все места — красная дуга
+  let full = 0
+  for (let g = 1; g <= gens; g++) { let all = true; for (let k = 2 ** g; k < 2 ** (g + 1); k++) if (!slots[k]) all = false; if (!all) break; full = g }
   const side = (k: number) => (k < 2 ? '' : (k >> (genOf(k) - 1)) === 2 ? 'dad' : 'mom')
 
   const cells = []
@@ -48,7 +53,7 @@ export function AncestorFan({id, ix, gens}: {id: string; ix: Lookup; gens: numbe
     const r0 = radius(g - 1), r1 = radius(g)
     const p = slots[k], child = slots[k >> 1]
     const gap = !p && !!child   // ребёнок известен, родитель — нет
-    const cls = ['fan-cell', side(k), p ? 'known' : gap ? 'gap' : 'none', hover && path.has(k) ? 'on' : '', hover && !path.has(k) ? 'dim' : ''].join(' ')
+    const cls = ['fan-cell', side(k), p ? 'known' : gap ? 'gap' : 'none', p && p.id === selected ? 'sel' : '', hover && path.has(k) ? 'on' : '', hover && !path.has(k) ? 'dim' : ''].join(' ')
     const mid = (a0 + a1) / 2, rm = (r0 + r1) / 2, deg = (mid * 180) / Math.PI
     let label = null
     if (p) {
@@ -81,11 +86,14 @@ export function AncestorFan({id, ix, gens}: {id: string; ix: Lookup; gens: numbe
   return <div className="fan" ref={box}>
     <svg viewBox={`${-W / 2} ${-R - PAD} ${W} ${H}`} className="fan-svg" role="img" aria-label={t('fan_count', known, total, gens)}>
       {cells}
-      <path className={`fan-cell me ${hover ? 'on' : ''}`} d={`M${-R0},0A${R0},${R0} 0 0 1 ${R0},0Z`} />
+      <path className={`fan-cell me ${hover ? 'on' : ''} ${onPick ? 'pick' : ''}`} onClick={() => { if (onPick && me) onPick(me) }} d={`M${-R0},0A${R0},${R0} 0 0 1 ${R0},0Z`} />
       <line className="fan-base" x1={-R} x2={R} y1={0} y2={0} />
-      {me && <text className="fan-me" y={20} textAnchor="middle">{nameIn(me.names, lang)}</text>}
+      {full > 0 && <path className="fan-full" d={`M${-radius(full)},0A${radius(full)},${radius(full)} 0 0 1 ${radius(full)},0`}><title>{t('fan_full', full)}</title></path>}
+      {Array.from({length: gens}, (_, i) => i + 1).flatMap(g => [-1, 1].map(sgn =>
+        <text key={`${g}${sgn}`} className="fan-gnum" x={sgn * (radius(g - 1) + radius(g)) / 2} y={16} textAnchor="middle">{g}</text>))}
+      {me && <text className="fan-me" y={36} textAnchor="middle">{nameIn(me.names, lang)}</text>}
     </svg>
     <Tip tip={tip} width={box.current?.clientWidth} />
-    <p className="fan-sum"><b>{t('fan_count', known, total, gens)}</b></p>
+    <p className="fan-sum"><b>{t('fan_count', known, total, gens)}</b>{full > 0 && <span className="life"> · {t('fan_full', full)}</span>}</p>
   </div>
 }

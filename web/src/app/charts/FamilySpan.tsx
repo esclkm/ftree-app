@@ -18,7 +18,8 @@ const MARRIED = /брак|жени|замуж|свадьб|венча|ślub|boda
 
 interface Row { p: IndexPerson; self?: boolean }
 
-export function FamilySpan({p, ix}: {p: PersonFile; ix: Lookup}) {
+/** onPick — нажатие выбирает человека (страница «Исследовать»); bare — без своей карточки и заголовка */
+export function FamilySpan({p, ix, onPick, bare}: {p: PersonFile; ix: Lookup; onPick?: (x: IndexPerson) => void; bare?: boolean}) {
   const t = useT(), lang = useLang(), href = useLinks(), navigate = useNavigate()
   const {box, tip, show, hide} = useTip()
   const [hover, setHover] = useState('')
@@ -66,7 +67,7 @@ export function FamilySpan({p, ix}: {p: PersonFile; ix: Lookup}) {
         const first = name.split(/\s+/)[0]
         const end = yr.died ?? (yr.alive ? THIS_YEAR : undefined)
         const cls = ['fs-row', r.p.sex === 'F' ? 'f' : 'm', r.self ? 'self' : '', hover === r.p.id ? 'on' : hover ? 'dim' : ''].join(' ')
-        const go = () => { if (!r.self) navigate(href.person(r.p.slug)) }
+        const go = () => { if (onPick) onPick(r.p); else if (!r.self) navigate(href.person(r.p.slug)) }
         return <g key={r.p.id} className={cls} tabIndex={r.self ? -1 : 0} role={r.self ? undefined : 'link'} aria-label={name}
           onMouseEnter={() => setHover(r.p.id)} onMouseLeave={() => { setHover(''); hide() }}
           onMouseMove={e => show(e, <><b>{name}</b>{r.p.life && <span className="life"> {r.p.life}</span>}
@@ -87,8 +88,7 @@ export function FamilySpan({p, ix}: {p: PersonFile; ix: Lookup}) {
     </Fragment>
   })
 
-  return <section className="card fs-card" data-note-where={t('fs_title')}>
-    <h2><Icon name="event" />{t('fs_title')}</h2>
+  const inner = <>
     <div className="fs-scroll" ref={box}>
       <svg viewBox={`0 0 ${W} ${H}`} className="fs-svg" role="img" aria-label={t('fs_title')}>
         {own.born !== undefined && ownTo !== undefined &&
@@ -107,5 +107,7 @@ export function FamilySpan({p, ix}: {p: PersonFile; ix: Lookup}) {
       {wed !== undefined && <span><i className="wed" />{t('fs_married')}</span>}
       <span className="life">{t('fs_age_note')}</span>
     </div>
-  </section>
+  </>
+  return bare ? <div className="fs-card">{inner}</div> : <section className="card fs-card" data-note-where={t('fs_title')}>
+    <h2><Icon name="event" />{t('fs_title')}</h2>{inner}</section>
 }
