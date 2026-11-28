@@ -11,6 +11,7 @@ import {nameIn, useLang, useT} from '../i18n'
 import {Status} from '../Layout'
 import {useIndex, useLinks} from '../useIndex'
 import {PersonLink} from './PersonPage'
+import {Ancestors} from '../charts/Ancestors'
 
 const LOCALE = {ru: 'ru-RU', pl: 'pl-PL', es: 'es-ES', en: 'en-GB'} as const
 const SHOWN = 12   // в группе дня больше — остальные под «ещё N»
@@ -71,6 +72,7 @@ export function ProgressPage() {
       <div className="life">{t('stats_total', total.people, total.bios, total.pics, total.facts)}</div>
       <p><Link to={href.at('/news')}><Icon name="history" /> {t('news_title')} →</Link></p>
     </div></section>
+    <Ancestors id={ix.index.start} ix={ix} />
     <div className="stats-grid">{branches.map(b =>
       <section className="card stat" key={b.key}>
         <h2><Link to={href.at(`/people#${ix.index.branches.find(x => x.key === b.key)?.slug ?? ''}`)}>{branch(b.key)}</Link></h2>

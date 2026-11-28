@@ -635,6 +635,35 @@ stats_doc_record|документом|dokumentem|con documento|by a document
 stats_doc_family|со слов семьи|z relacji rodziny|según la familia|family accounts
 stats_doc_none|нечем|niczym|sin confirmar|nothing yet
 stats_of|из {0}|z {0}|de {0}|of {0}
+fan_title|Предки|Przodkowie|Antepasados|Ancestors
+fan_tab|Веер предков|Wachlarz przodków|Abanico de antepasados|Ancestor fan
+fan_gens|Поколений:|Pokoleń:|Generaciones:|Generations:
+fan_count|Известно {0} из {1} предков в {2} поколениях|Znanych {0} z {1} przodków w {2} pokoleniach|Se conocen {0} de {1} antepasados en {2} generaciones|{0} of {1} ancestors in {2} generations are known
+fan_g1|Родитель|Rodzic|Progenitor|Parent
+fan_g2|Дед или бабушка|Dziadek lub babcia|Abuelo o abuela|Grandparent
+fan_gn|Поколение {0}|Pokolenie {0}|Generación {0}|Generation {0}
+fan_dad|по отцу|ze strony ojca|por parte del padre|father's side
+fan_mom|по матери|ze strony matki|por parte de la madre|mother's side
+fan_unknown|Неизвестен|Nieznany|Desconocido|Unknown
+fan_gap|Ребёнок известен — этого предка можно искать|Dziecko jest znane — tego przodka można szukać|El hijo es conocido: a este antepasado se lo puede buscar|The child is known — this ancestor can be searched for
+depth_title|Глубина линий|Głębokość linii|Profundidad de las líneas|How far back each line goes
+depth_earliest|Самый ранний|Najwcześniejszy|El más antiguo|Earliest
+depth_tip|{0} поколений над центром · {1} чел. в линии|{0} pokoleń nad środkiem · {1} os. w linii|{0} generaciones sobre el centro · {1} personas en la línea|{0} generations above the centre · {1} people on the line
+depth_none|Годов рождения в линии пока нет|W linii nie ma jeszcze lat urodzenia|En la línea aún no hay años de nacimiento|No birth years on this line yet
+depth_note|Клин — линия одного прадеда или прабабушки (слева — по отцу, справа — по матери). Длина — год рождения самого раннего известного предка в этой линии. Нажмите на клин — откроется страница этого предка.|Klin — linia jednego pradziadka lub prababci (z lewej — ze strony ojca, z prawej — matki). Długość — rok urodzenia najwcześniejszego znanego przodka w tej linii. Kliknij klin, aby otworzyć stronę tego przodka.|Cada cuña es la línea de un bisabuelo o bisabuela (a la izquierda, por el padre; a la derecha, por la madre). Su largo es el año de nacimiento del antepasado más antiguo conocido de esa línea. Pulse una cuña para abrir la página de ese antepasado.|Each wedge is the line of one great-grandparent (left — father's side, right — mother's). Its length is the birth year of the earliest known ancestor on that line. Click a wedge to open that ancestor's page.
+fs_title|Семья на одной шкале|Rodzina na jednej osi czasu|La familia en una línea de tiempo|Family on one timeline
+fs_parents|Родители|Rodzice|Padres|Parents
+fs_siblings|Братья и сёстры|Rodzeństwo|Hermanos|Siblings
+fs_self|Сам человек|Ta osoba|La persona|This person
+fs_spouses|Супруги|Małżonkowie|Cónyuges|Spouses
+fs_children|Дети|Dzieci|Hijos|Children
+fs_lifetime|Годы жизни: {0}|Lata życia: {0}|Años de vida: {0}|{0}'s lifetime
+fs_men|Мужчины|Mężczyźni|Hombres|Men
+fs_women|Женщины|Kobiety|Mujeres|Women
+fs_married|Свадьба|Ślub|Boda|Married
+fs_age|Прожил(а) {0} лет|Żył(a) {0} lat|Vivió {0} años|Lived {0} years
+fs_age_note|Число — возраст в год смерти|Liczba — wiek w roku śmierci|El número es la edad al morir|The number is the age they died
+fs_no_end|Год смерти неизвестен|Rok śmierci nieznany|Año de muerte desconocido|Year of death unknown
 stats_note|Цифры пересчитываются при каждой сборке сайта. «Поколений вглубь» — сколько поколений предков известно над дедом или бабушкой, с которых начинается род. Линия под числом — как род рос по дням. Подтверждения считаются по предкам: рождение и смерть каждого (у живых — только рождение).|Liczby są przeliczane przy każdej budowie strony. „Pokoleń w głąb” — ile pokoleń przodków znamy ponad dziadkiem lub babcią, od których zaczyna się ród. Linia pod liczbą — jak ród rósł dzień po dniu. Potwierdzenia liczone są dla przodków: narodziny i zgon każdego (u żyjących — tylko narodziny).|Las cifras se recalculan en cada compilación del sitio. «Generaciones atrás»: cuántas generaciones de antepasados se conocen por encima del abuelo o la abuela con que empieza la rama. La línea bajo la cifra muestra cómo creció la rama día a día. Las confirmaciones se cuentan para los antepasados: nacimiento y muerte de cada uno (de los vivos, solo el nacimiento).|The numbers are recalculated every time the site is built. "Generations back" is how many generations of ancestors are known above the grandparent the branch starts with. The line under the number shows how the branch grew day by day. Proof is counted for the ancestors: each one's birth and death (for the living, birth only).
 n_btn|Заметки|Notatki|Notas|Notes
 n_btn_title|Заметки для Claude|Notatki dla Claude|Notas para Claude|Notes for Claude

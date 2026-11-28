@@ -1,0 +1,79 @@
+// Графики предков и семьи (charts/): веер, глубина линий, семья на шкале. Цвета — только переменными (тёмная тема).
+.anc-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.anc-tabs { display: flex; gap: 6px; button { cursor: pointer; } }
+
+.fan { position: relative; }
+.fan-svg { display: block; width: 100%; max-width: 860px; height: auto; margin: 0 auto; overflow: visible; font-family: var(--f-display); }
+.fan-sum { text-align: center; margin: 6px 0 0; }
+
+.fan-cell {
+  path { fill: var(--card); stroke: var(--outline); stroke-width: 1; transition: opacity .15s, fill .15s; }
+  &.known { cursor: pointer; }
+  &.known.dad path { fill: color-mix(in srgb, var(--male) 26%, var(--card)); }
+  &.known.mom path { fill: color-mix(in srgb, var(--female) 26%, var(--card)); }
+  &.gap path { fill: var(--surface-2); stroke-dasharray: 3 3; }
+  &.none path { fill: transparent; opacity: .55; }
+  &.on.dad path { fill: color-mix(in srgb, var(--male) 62%, var(--card)); stroke: var(--male); stroke-width: 1.5; }
+  &.on.mom path { fill: color-mix(in srgb, var(--female) 62%, var(--card)); stroke: var(--female); stroke-width: 1.5; }
+  &.dim { opacity: .55; }
+  &:focus-visible { outline: none; path { stroke: var(--primary); stroke-width: 2.5; } }
+  &.me { fill: var(--on-surface); stroke: none; }
+  &.me.on { fill: var(--path); }
+}
+.fan-name { fill: var(--on-surface); pointer-events: none; font-weight: 700;
+  .sur { font-weight: 400; font-size: .82em; fill: var(--muted); } }
+.fan-cell.on .fan-name { .sur { fill: var(--on-surface); } }
+.fan-base { stroke: var(--like); stroke-width: 1.5; }
+.fan-me { font-family: var(--f-body); font-weight: 700; font-size: 14px; fill: var(--on-surface); }
+
+.depth-ring { path { fill: none; stroke: var(--outline); } text { font-family: var(--f-body); font-size: 12px; fill: var(--muted); } }
+.depth-wedge {
+  cursor: pointer;
+  path { stroke-width: 1; transition: opacity .15s; }
+  &.dad path { fill: color-mix(in srgb, var(--male) 55%, var(--card)); stroke: var(--male); }
+  &.mom path { fill: color-mix(in srgb, var(--female) 50%, var(--card)); stroke: var(--female); }
+  &.none { cursor: default; fill: var(--surface-2); }
+  &.on path { stroke-width: 2.5; stroke: var(--on-surface); }
+  &.on.dad path { fill: var(--male); } &.on.mom path { fill: var(--female); }
+  &.dim { opacity: .55; }
+  &:focus-visible { outline: none; path { stroke: var(--primary); stroke-width: 3; } }
+}
+.depth-year { font-family: var(--f-body); font-weight: 800; font-size: 17px; fill: var(--on-surface);
+  paint-order: stroke; stroke: var(--card); stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }
+.depth-me { fill: var(--surface-2); stroke: var(--outline); }
+.fan.depth .note { text-align: center; }
+
+.chart-tip {
+  position: absolute; z-index: 30; pointer-events: none; max-width: 300px; padding: 8px 10px; border-radius: 10px;
+  background: var(--card); color: var(--on-surface); box-shadow: var(--shadow-2); border: 1px solid var(--outline);
+  font-size: 14px; line-height: 1.35;
+}
+
+.fs-scroll { position: relative; overflow-x: auto; }
+.fs-svg { display: block; width: 100%; min-width: 620px; height: auto; font-family: var(--f-body); }
+.fs-own { fill: color-mix(in srgb, var(--like) 12%, transparent); }
+.fs-tick { line { stroke: var(--outline); } text { font-size: 12px; font-weight: 700; fill: var(--muted); } }
+.fs-group { font-size: 13px; font-weight: 700; fill: var(--muted); }
+.fs-row {
+  cursor: pointer; transition: opacity .15s;
+  .fs-hit { fill: transparent; }
+  .fs-name { font-size: 14px; fill: var(--on-surface); }
+  .fs-life { font-size: 12px; fill: var(--muted); }
+  .fs-bar { stroke-width: 6; stroke-linecap: round; }
+  &.m .fs-bar { stroke: color-mix(in srgb, var(--male) 75%, var(--card)); }
+  &.f .fs-bar { stroke: color-mix(in srgb, var(--female) 75%, var(--card)); }
+  .fs-bar.open { stroke-dasharray: 2 6; }
+  &.self { cursor: default; .fs-name { font-weight: 700; } .fs-bar { stroke: var(--muted); stroke-width: 10; } }
+  .fs-age { font-size: 13px; font-weight: 700; fill: var(--on-surface); }
+  &.on .fs-hit { fill: var(--surface-1); }
+  &.on .fs-bar { stroke-width: 9; }
+  &.dim { opacity: .5; }
+  &:focus-visible { outline: none; .fs-hit { fill: var(--primary-container); } }
+}
+.fs-wed { fill: var(--like); stroke: var(--card); stroke-width: 2; }
+.fs-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; font-size: 13px; color: var(--muted);
+  span { display: inline-flex; align-items: center; gap: 6px; }
+  i { display: inline-block; width: 14px; height: 6px; border-radius: 3px; }
+  i.own { height: 12px; border-radius: 2px; background: color-mix(in srgb, var(--like) 18%, transparent); }
+  i.m { background: var(--male); } i.f { background: var(--female); }
+  i.wed { width: 10px; height: 10px; border-radius: 50%; background: var(--like); } }

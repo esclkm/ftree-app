@@ -14,6 +14,8 @@ import {cleanSlug, type Lookup, useIndex, useLinks} from '../useIndex'
 import {Pin} from '../notes/Pin'
 import {Homes} from '../Houses'
 import {NoteScope} from '../notes/scope'
+import {Ancestors} from '../charts/Ancestors'
+import {FamilySpan} from '../charts/FamilySpan'
 
 export function PersonPage() {
   const href = useLinks()
@@ -95,6 +97,8 @@ function Person({p, ix}: {p: PersonFile; ix: Lookup}) {
         <Possible p={p} ix={ix} />
       </section>
     </div>
+    <FamilySpan key={`fs-${p.id}`} p={p} ix={ix} />
+    <Ancestors key={`anc-${p.id}`} id={p.id} ix={ix} />
     {p.biography && <Lifeline bio={p.biography} />}
     {p.biography && <Biography key={p.id} bio={p.biography} />}
     {p.biography && <Recollections bio={p.biography} />}
