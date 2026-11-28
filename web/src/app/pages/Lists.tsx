@@ -8,6 +8,7 @@ import {Badges} from '../Badges'
 import {nameIn, titleIn, useLang, useT} from '../i18n'
 import {Status} from '../Layout'
 import {type IndexPerson, useIndex, useLinks} from '../useIndex'
+import {Explore} from './Explore'
 import {PersonLink} from './PersonPage'
 
 const TILES = [['nav_tree', 'card_tree', '/tree', 'tree'], ['nav_map', 'card_map', '/map', 'map'],
@@ -28,6 +29,7 @@ export function Home() {
       <p>{t('home_intro', people.length, ix.index.places.length)}</p>
       <p className="life">{t('home_bio', withBio, people.length)}</p>
     </div></section>
+    <Explore />
     <div className="tiles">{TILES.map(([k, sub, to, ic]) =>
       <Link key={k} className="tile" to={to}><Icon name={ic} /><b>{t(k)}</b>{t(sub)}</Link>)}</div>
     <section className="card"><h2><Icon name="fam" />{t('branches')}</h2>

@@ -83,7 +83,7 @@
   i.wed { width: 10px; height: 10px; border-radius: 50%; background: var(--like); } }
 .fan-cell.me.pick { cursor: pointer; }
 
-// «Исследовать» (pages/Explore.tsx): веер и родня слева, карточка выбранного справа
+// «Исследовать» на главной (pages/Explore.tsx): веер и родня слева, карточка выбранного справа
 .anc-card h2 { display: flex; align-items: center; gap: 8px; .anc-explore { margin-left: auto; font-size: 14px; } }
 .explore { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start;
   @media (max-width: 1000px) { grid-template-columns: minmax(0, 1fr); } }
@@ -133,5 +133,5 @@
   &.m { border-left: 4px solid var(--male); } &.f { border-left: 4px solid var(--female); }
   &.main { border: 2px solid var(--like); background: var(--like-bg); font-size: 15px; }
   &.empty { cursor: default; border-style: dashed; color: var(--muted); background: transparent; } }
-// на телефоне в меню не помещается восьмой пункт — «Исследовать» открывается кнопкой на карточке «Предки»
-@include phone { .appbar nav a[href$="/explore"] { display: none; } }
+.explore { margin-bottom: 16px; }
+.ex-choose { margin-bottom: 16px; .psearch { max-width: 480px; } }

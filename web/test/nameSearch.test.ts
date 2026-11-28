@@ -24,3 +24,28 @@ describe('nameSearch', () => {
     expect(nameRank(['Прокоп Ясенев'], queryWords('сенев'))).toBe(2)
   })
 })
+
+describe('любой язык и запись', () => {
+  const rakitin = ['Сергей Ракитин', 'Siarhei Rakitin', 'Sergiusz Rakitin']
+  const hleb = ['Глеб Карашко', 'Gleb Karashko', 'Gleb Karaszko']
+  it('язык и порядок слов не важны, можно вперемешку', () => {
+    expect(matchesName(rakitin, queryWords('Rakitin Сергей'))).toBe(true)
+    expect(matchesName(rakitin, queryWords('ракитин siarhei'))).toBe(true)
+  })
+  it('другая запись латиницей — по скелету', () => {
+    expect(matchesName(hleb, queryWords('Hleb Karaško'))).toBe(true)
+    expect(matchesName(['Алёна Борисова'], queryWords('Barysava Alyona'))).toBe(true)
+    expect(matchesName(['Прокоп Ракитин'], queryWords('Prakop'))).toBe(true)
+    expect(matchesName(['Иван Харак'], queryWords('Charak'))).toBe(false)  // польское ch = х — пока не умеем
+    expect(matchesName(['Иван Харак'], queryWords('Kharak Ivan'))).toBe(true)
+  })
+  it('не та раскладка', () => {
+    expect(matchesName(rakitin, queryWords('Hfrbnby'))).toBe(true)
+    expect(matchesName(rakitin, queryWords('кфлшешт'))).toBe(true)
+  })
+  it('скелет не ловит лишнего', () => {
+    expect(matchesName(rakitin, queryWords('ан'))).toBe(false)
+    expect(matchesName(rakitin, queryWords('Карашко'))).toBe(false)
+    expect(nameRank(rakitin, queryWords('Hfrbnby'))).toBe(3)
+  })
+})

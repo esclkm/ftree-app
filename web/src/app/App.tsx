@@ -12,7 +12,7 @@ import './notes/notes.scss'
 import {LangRoot} from './LangRoot'
 import {Oops} from './Oops'
 import {AlbumPage, GalleryIndex} from './pages/Gallery'
-import {Explore} from './pages/Explore'
+import {ToHome} from './pages/Explore'
 import {Lifelines} from './pages/Lifelines'
 import {Home, People, Sources} from './pages/Lists'
 import {DocPage, NotFound, PlacePage, ResearchPage, ReviewPage, SourcePage} from './pages/OtherPages'
@@ -45,7 +45,7 @@ const router = createBrowserRouter([
     {path: 'tree', element: <TreePage />},
     {path: 'map', element: <MapPage />},
     {path: 'map/houses', element: <Navigate to="../gallery/houses" replace />},  // старый адрес «Домов»
-    {path: 'explore', element: <Explore />},  // «Исследовать»: веер, карточка выбранного, ближняя родня
+    {path: 'explore', element: <ToHome />},  // «Исследовать» теперь на главной; старый адрес ведёт туда
     {path: 'lifelines', element: <Lifelines />},
     {path: 'progress', element: <ProgressPage />},  // «Состояние дерева»: цифры по родам
     {path: 'news', element: <NewsPage />},  // «Что нового»: правки по дням

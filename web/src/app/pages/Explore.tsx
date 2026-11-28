@@ -1,13 +1,15 @@
-// «Исследовать» (/<язык>/explore?c=<центр>&p=<выбранный>): большой веер предков, нажатие выбирает человека — справа его
+// «Исследовать» — на главной (/<язык>/?c=<центр>&p=<выбранный>): большой веер предков, нажатие выбирает человека — справа его
 // карточка (кем приходится, годы и места, родители, супруги, дети — всё нажимается), под веером — ближняя родня
 // выбранного и его семья на одной шкале. Адрес помнит центр и выбранного: ссылку можно отправить.
 import {skipToken} from '@reduxjs/toolkit/query'
 import {type ReactNode, useEffect, useMemo, useState} from 'react'
-import {Link, useSearchParams} from 'react-router'
+import {Link, Navigate, useLocation, useSearchParams} from 'react-router'
 import type {LifeEvent} from '../../data/schema.gen'
 import {Icon} from '../../components/Icon'
 import {relation} from '../../kin'
-import {useMe} from '../../me'
+import {PersonSearch} from '../../components/PersonSearch'
+import {tree} from '../../data'
+import {setMe, useMe} from '../../me'
 import {usePersonQuery} from '../api'
 import {AncestorFan} from '../charts/AncestorFan'
 import {readGens, saveGens} from '../charts/Ancestors'
@@ -20,15 +22,21 @@ import {type IndexPerson, type Lookup, useIndex, useLinks} from '../useIndex'
 
 const RECENT = 8
 
+/** Старый адрес /<язык>/explore — на главную с тем же центром и выбранным */
+export function ToHome() {
+  const {search} = useLocation()
+  return <Navigate to={`..${search}`} relative="path" replace />
+}
+
 export function Explore() {
   const t = useT(), lang = useLang(), {ix, isLoading, isError} = useIndex(), me = useMe()
   const [params, setParams] = useSearchParams()
   const [gens, setGens] = useState(readGens)
   const [recent, setRecent] = useState<string[]>([])
   const [seen, setSeen] = useState<Set<string>>(() => new Set())
-  useEffect(() => { document.title = `${t('nav_explore')} — ${t('site')}` }, [t])
   const bySlug = (s: string | null) => (s && ix ? ix.personBySlug.get(s) : undefined)
-  const center = bySlug(params.get('c')) ?? (ix && ix.people.get((me && ix.people.has(me) ? me : ix.index.start)))
+  // центр — «я» из «Настроек» или тот, кого прислали ссылкой (?c=); иначе вместо веера — «Выберите себя»
+  const center = bySlug(params.get('c')) ?? (ix && me ? ix.people.get(me) : undefined)
   const sel = bySlug(params.get('p')) ?? center
   useEffect(() => {
     if (!sel) return
@@ -38,7 +46,7 @@ export function Explore() {
   const slots = useMemo(() => (ix && center ? ancestorSlots(ix, center.id, gens) : []), [ix, center?.id, gens])  // eslint-disable-line react-hooks/exhaustive-deps
   if (isError) return <Status state="error" />
   if (isLoading || !ix) return <Status state="loading" />
-  if (!center || !sel) return <Status state="not_found" />
+  if (!center || !sel) return <ChooseMe />
 
   const pick = (p: IndexPerson) => { const q = new URLSearchParams(params); q.set('p', p.slug); setParams(q, {replace: true}) }
   const recenter = (p: IndexPerson) => { const q = new URLSearchParams(params); q.set('c', p.slug); q.set('p', p.slug); setParams(q) }
@@ -78,6 +86,16 @@ export function Explore() {
     </div>
     <Preview key={sel.id} sel={sel} center={center} side={side} ix={ix} pick={pick} recenter={recenter} />
   </div>
+}
+
+/** «Кто вы?» — пока «я» не выбран: веер строится от вас, родство считается от вас */
+function ChooseMe() {
+  const t = useT(), people = tree()
+  return <section className="card ex-choose">
+    <h2><Icon name="person" />{t('ex_choose')}</h2>
+    <p className="life">{t('ex_choose_hint')}</p>
+    {people && <PersonSearch people={people} placeholder={t('set_me_find')} onPick={setMe} />}
+  </section>
 }
 
 /** Карточка выбранного справа */

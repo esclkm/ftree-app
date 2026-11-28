@@ -26,7 +26,7 @@ export function Ancestors({id, ix, title}: {id: string; ix: Lookup; title?: stri
   const pick = (n: number) => { setGens(n); saveGens(n) }
   return <section className="card anc-card" data-note-where={t('fan_title')}>
     <h2><Icon name="tree" />{title ?? t('fan_title')}
-      <Link className="btn tonal anc-explore" to={href.at(`/explore?c=${ix.people.get(id)?.slug ?? ''}`)}>{t('ex_go')} →</Link></h2>
+      <Link className="btn tonal anc-explore" to={href.at(`/?c=${ix.people.get(id)?.slug ?? ''}`)}>{t('ex_go')} →</Link></h2>
     <div className="anc-bar">
       {depthOk && <div className="bio-tabs anc-tabs" role="tablist">
         <button role="tab" aria-selected={tab === 'fan'} className={tab === 'fan' ? 'on' : ''} onClick={() => setTab('fan')}>{t('fan_tab')}</button>
