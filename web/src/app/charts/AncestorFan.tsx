@@ -28,9 +28,9 @@ function lines(full: string, room: number, fs: number): string[] {
   return w.length <= 1 ? [cut(w[0] ?? '')] : [cut(w[0]), cut(w.slice(1).join(' '))]
 }
 
-/** onPick — нажатие выбирает человека (страница «Исследовать»), без него — открывает его страницу; selected — выбранный */
-export function AncestorFan({id, ix, gens, onPick, selected}: {id: string; ix: Lookup; gens: number
-  onPick?: (p: IndexPerson) => void; selected?: string}) {
+/** onCenter — двойное нажатие ставит человека в центр веера; onPick — нажатие выбирает человека (страница «Исследовать»), без него — открывает его страницу; selected — выбранный */
+export function AncestorFan({id, ix, gens, onPick, onCenter, selected}: {id: string; ix: Lookup; gens: number
+  onPick?: (p: IndexPerson) => void; onCenter?: (p: IndexPerson) => void; selected?: string}) {
   const t = useT(), lang = useLang(), href = useLinks(), navigate = useNavigate()
   const {box, tip, show, hide} = useTip()
   const [hover, setHover] = useState(0)
@@ -77,6 +77,7 @@ export function AncestorFan({id, ix, gens, onPick, selected}: {id: string; ix: L
         : <><b>{t('fan_unknown')}</b>{gap && <div className="life">{t('fan_gap')}</div>}</>)}
       onMouseLeave={() => { setHover(0); hide() }}
       onClick={() => p && go(p)}
+      onDoubleClick={() => { if (p && onCenter) { hide(); setHover(0); onCenter(p) } }}
       onKeyDown={e => { if (p && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); go(p) } }}
       tabIndex={p ? 0 : -1} role={p ? 'link' : undefined} aria-label={p ? nameIn(p.names, lang) : undefined}>
       <path d={seg(r0, r1, a0, a1)} />{label}

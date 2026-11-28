@@ -28,9 +28,11 @@ export function ToHome() {
   return <Navigate to={`..${search}`} relative="path" replace />
 }
 
-export function Explore() {
-  const t = useT(), lang = useLang(), {ix, isLoading, isError} = useIndex(), me = useMe()
+/** wide — отдельная страница /<язык>/fan: веер во всю ширину окна, чтобы читались имена дальних поколений */
+export function Explore({wide}: {wide?: boolean}) {
+  const t = useT(), lang = useLang(), href = useLinks(), {ix, isLoading, isError} = useIndex(), me = useMe()
   const [params, setParams] = useSearchParams()
+  useEffect(() => { if (wide) document.title = `${t('ex_title')} — ${t('site')}` }, [wide, t])
   const [gens, setGens] = useState(readGens)
   const [recent, setRecent] = useState<string[]>([])
   const [seen, setSeen] = useState<Set<string>>(() => new Set())
@@ -56,17 +58,22 @@ export function Explore() {
   const slot = slots.findIndex(p => p?.id === sel.id)
   const side = slot >= 2 ? ((slot >> (genOf(slot) - 1)) === 2 ? 'dad' : 'mom') : undefined
 
-  return <div className="explore">
+  const search = params.toString() ? `?${params}` : ''
+  return <div className={'explore' + (wide ? ' wide' : '')}>
     <div className="ex-main">
       <section className="card ex-fan">
         <div className="anc-bar">
           <div><h2><Icon name="tree" />{t('ex_title')}</h2><p className="life">{t('ex_hint')}</p></div>
+          <div className="ex-tools">
+          {wide ? <Link className="btn tonal" to={`${href.home}${search}`}>← {t('ex_back')}</Link>
+            : <Link className="btn tonal" to={href.at(`/fan${search}`)}>⤢ {t('ex_big')}</Link>}
           <label className="life">{t('fan_gens')}{' '}
             <select value={gens} onChange={e => { const n = Number(e.target.value); setGens(n); saveGens(n) }}>
               {[3, 4, 5, 6, 7, 8].map(n => <option key={n} value={n}>{n}</option>)}
             </select></label>
+          </div>
         </div>
-        <AncestorFan id={center.id} ix={ix} gens={gens} onPick={pick} selected={sel.id} />
+        <AncestorFan id={center.id} ix={ix} gens={gens} onPick={pick} onCenter={recenter} selected={sel.id} />
         <div className="ex-nums">
           <span><b>{known + 1}</b> {t('ex_showing')}</span>
           <span className="hot"><b>{seenInFan}</b> {t('ex_seen')}</span>

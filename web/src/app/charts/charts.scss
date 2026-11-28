@@ -4,7 +4,7 @@
 .anc-tabs { display: flex; gap: 6px; button { cursor: pointer; } }
 
 .fan { position: relative; }
-.fan-svg { display: block; width: 100%; max-width: 860px; height: auto; margin: 0 auto; overflow: visible; font-family: var(--f-display); }
+.fan-svg { user-select: none; -webkit-user-select: none; display: block; width: 100%; max-width: 860px; height: auto; margin: 0 auto; overflow: visible; font-family: var(--f-display); }
 .fan-sum { text-align: center; margin: 6px 0 0; }
 
 .fan-cell {
@@ -135,3 +135,11 @@
   &.empty { cursor: default; border-style: dashed; color: var(--muted); background: transparent; } }
 .explore { margin-bottom: 16px; }
 .ex-choose { margin-bottom: 16px; .psearch { max-width: 480px; } }
+
+// крупный веер (/<язык>/fan): страница во всю ширину окна, веер — по высоте окна
+main:has(.explore.wide) { max-width: none; }
+.ex-tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.explore.wide { grid-template-columns: minmax(0, 1fr) 340px;
+  .fan-svg { max-width: none; max-height: calc(100vh - 170px); }
+  @media (max-width: 1000px) { grid-template-columns: minmax(0, 1fr); } }
+.fan-cell:focus:not(:focus-visible), .depth-wedge:focus:not(:focus-visible), .fs-row:focus:not(:focus-visible) { outline: none; }
