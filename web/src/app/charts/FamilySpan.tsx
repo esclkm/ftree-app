@@ -1,7 +1,7 @@
 // Семья на одной шкале: родители, братья и сёстры (с самим человеком по порядку рождения), супруги, дети — полоса на
 // каждую жизнь, фон — годы жизни самого человека. Число в конце — возраст в год смерти; точка — свадьба (из линии
 // жизни, если там есть строка о браке). Наведение — подсказка, нажатие — страница человека.
-import {Fragment, useState} from 'react'
+import {Fragment, type ReactNode, useState} from 'react'
 import {useNavigate} from 'react-router'
 import type {PersonFile} from '../../data/schema.gen'
 import {Icon} from '../../components/Icon'
@@ -19,7 +19,17 @@ const MARRIED = /брак|жени|замуж|свадьб|венча|ślub|boda
 interface Row { p: IndexPerson; self?: boolean }
 
 /** onPick — нажатие выбирает человека (страница «Исследовать»); bare — без своей карточки и заголовка */
-export function FamilySpan({p, ix, onPick, bare}: {p: PersonFile; ix: Lookup; onPick?: (x: IndexPerson) => void; bare?: boolean}) {
+/** Хватит ли людей с годами (двоих) на шкалу — по нему страница человека решает, прятать ли таблицу «Семья» */
+export function familySpanShown(id: string, ix: Lookup): boolean {
+  const me = ix.people.get(id)
+  if (!me) return false
+  const sibs = me.parents.flatMap(x => ix.people.get(x)?.children ?? [])
+  const all = new Set([id, ...me.parents, ...sibs, ...me.spouses, ...me.children])
+  return [...all].filter(x => yearsOf(ix.people.get(x)?.life).born !== undefined).length >= 2
+}
+
+/** pin — кнопка заметки к семье: на компьютере таблицы «Семья» нет, кнопка живёт здесь */
+export function FamilySpan({p, ix, onPick, bare, pin}: {p: PersonFile; ix: Lookup; onPick?: (x: IndexPerson) => void; bare?: boolean; pin?: ReactNode}) {
   const t = useT(), lang = useLang(), href = useLinks(), navigate = useNavigate()
   const {box, tip, show, hide} = useTip()
   const [hover, setHover] = useState('')
@@ -109,6 +119,6 @@ export function FamilySpan({p, ix, onPick, bare}: {p: PersonFile; ix: Lookup; on
       <span className="life">{t('fs_age_note')}</span>
     </div>
   </>
-  return bare ? <div className="fs-card">{inner}</div> : <section className="card fs-card" data-note-where={t('fs_title')}>
-    <h2><Icon name="event" />{t('fs_title')}</h2>{inner}</section>
+  return bare ? <div className="fs-card">{inner}</div> : <section className="card fs-card fs-person" data-note-where={t('fs_title')}>
+    <h2><Icon name="event" />{t('fs_title')}{pin}</h2>{inner}</section>
 }

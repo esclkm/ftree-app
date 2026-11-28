@@ -15,7 +15,7 @@ import {Pin} from '../notes/Pin'
 import {Homes} from '../Houses'
 import {NoteScope} from '../notes/scope'
 import {Ancestors} from '../charts/Ancestors'
-import {FamilySpan} from '../charts/FamilySpan'
+import {FamilySpan, familySpanShown} from '../charts/FamilySpan'
 import {SideTree} from '../charts/SideTree'
 
 export function PersonPage() {
@@ -66,6 +66,9 @@ function Person({p, ix}: {p: PersonFile; ix: Lookup}) {
     return `${t(k)}: ${ids.map(id => { const x = ix.people.get(id); return x ? nameIn(x.names, 'ru') : id }).join(', ')}`
   }).join('\n')
 
+  const span = familySpanShown(p.id, ix)
+  const familyPin = <Pin kind="about" where={t('nw_family_links')} text={plainFamily} title={t('n_pin_family')} />
+
   return <NoteScope subject={subject}><div className="split">
     <SideTree id={p.id} />
     <div className="split-main">
@@ -91,8 +94,9 @@ function Person({p, ix}: {p: PersonFile; ix: Lookup}) {
           {p.occupation && <tr><th>{t('occupation')}</th><td><Md text={(lang === 'ru' ? undefined : p.occupation_tr?.[lang]) || p.occupation} /><Pin kind="about" where={`${t('nw_short')} › ${t('nw_occupation')}`} text={p.occupation} /></td></tr>}
         </tbody></table>
       </section>}
-      <section className="card" data-note-where={t('nw_family')}>
-        <h2><Icon name="fam" />{t('family')}<Pin kind="about" where={t('nw_family_links')} text={plainFamily} title={t('n_pin_family')} /></h2>
+      {/* на компьютере семью показывает шкала ниже — таблица только на телефоне (и когда шкалу не построить) */}
+      <section className={'card fam-card' + (span ? ' has-span' : '')} data-note-where={t('nw_family')}>
+        <h2><Icon name="fam" />{t('family')}{familyPin}</h2>
         <table className="kv"><tbody>
           {family.filter(([, v]) => v.length).map(([k, v]) =>
             <tr key={k}><th>{t(k)}</th><td className="list">{v}</td></tr>)}
@@ -100,7 +104,7 @@ function Person({p, ix}: {p: PersonFile; ix: Lookup}) {
         <Possible p={p} ix={ix} />
       </section>
     </div>
-    <FamilySpan key={`fs-${p.id}`} p={p} ix={ix} />
+    <FamilySpan key={`fs-${p.id}`} p={p} ix={ix} pin={familyPin} />
     <Ancestors key={`anc-${p.id}`} id={p.id} ix={ix} />
     {p.biography && <Lifeline bio={p.biography} />}
     {p.biography && <Biography key={p.id} bio={p.biography} />}

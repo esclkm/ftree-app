@@ -159,3 +159,11 @@ main:has(.explore.wide) { max-width: none; }
 }
 .st-head { display: flex; gap: 12px; align-items: baseline; padding: 10px 14px; border-bottom: 1px solid var(--outline);
   b { display: inline-flex; gap: 6px; align-items: center; } .life { flex: 1; font-size: 13px; } }
+
+// «Семья» и «Семья на одной шкале» — одно и то же: на компьютере — шкала, на телефоне — таблица.
+// «Возможно, связан» живёт в карточке «Семья» — если он есть, карточка остаётся с ним одним.
+@media (min-width: 701px) {
+  .fam-card.has-span { > h2, > .kv { display: none; } .maybe { margin-top: 0; } }
+  .fam-card.has-span:not(:has(.maybe)) { display: none; }
+}
+@include phone { .fs-person { display: none; } }
