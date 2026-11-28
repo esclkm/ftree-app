@@ -186,6 +186,11 @@ class Extras:
         """Кто где на снимке (photo_faces.py): [(cr_id, лицо, фигура — [x0, y0, x1, y1] в долях)] по адресу снимка"""
         return []
 
+    def photo_info(self, url):
+        """Что известно о снимке (photo_info.py) по адресу на сайте: {"caption", "rows": [(колонка, значение)],
+        "origin"} — строки как в описи, со ссылками Obsidian; ничего нет — None"""
+        return None
+
     def stays(self, pid):
         """→ [(с, по, событие ev_…, cr_id места, государство тогда или None)]"""
         return []
@@ -370,7 +375,13 @@ class Export:
         """Снимок для сайта; на общем фото — кто где (рамки лиц), только люди, что есть на сайте."""
         faces = [{"person": pid, "region": box, "body": body} for pid, box, body in self.extras.photo_faces(url)
                  if pid in self.tree.people]
-        return _drop_empty({"url": url, "kind": "photo", "private": private, "faces": faces or None}, keep=("private",))
+        about = None if private else self.extras.photo_info(url)  # подпись, строка описи, метки файла
+        details = [{"col": c, "value": v} for c, v in ((self.text.clean(c), self.text(v)) for c, v in (about or {}).get("rows", []))
+                   if c and v.strip()]
+        return _drop_empty({"url": url, "kind": "photo", "private": private, "faces": faces or None,
+                            "caption": {"ru": cap} if about and (cap := self.text(about["caption"]).strip()) else None,
+                            "details": details or None, "origin": self.text.clean(about["origin"]) if about else None},
+                           keep=("private",))
 
     # ---------- место и источник ----------
 

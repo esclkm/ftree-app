@@ -9,7 +9,7 @@ export interface ShotFace { name: string; box: number[]; body?: number[] }
 const pct = (v: number) => `${v * 100}%`
 // меньшие фигуры — поверх больших: ребёнок на руках ловит мышь раньше взрослого
 const area = (f: ShotFace) => { const b = f.body ?? f.box; return (b[2] - b[0]) * (b[3] - b[1]) }
-export interface Shot { src: string; thumb?: string; caption?: string; info?: ReactNode; faces?: ShotFace[] }
+export interface Shot { src: string; thumb?: string; caption?: ReactNode; info?: ReactNode; faces?: ShotFace[] }
 type Open = (shots: Shot[], i: number) => void
 const Ctx = createContext<Open>(() => {})
 export const useLightbox = (): Open => useContext(Ctx)

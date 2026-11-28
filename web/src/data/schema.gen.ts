@@ -580,6 +580,17 @@ export interface Media {
   thumb?: string;
   kind: "photo" | "scan" | "audio" | "pdf";
   caption?: LangText;
+  /**
+   * Всё остальное, что известно о снимке (photo_info.py): колонки строки описи 00_ОПИСЬ («Кто», «Где и когда»…), подписи из выгрузки дерева и метки внутри jpg. Значение — Markdown со ссылками [подпись](person:номер).
+   */
+  details?: {
+    col: string;
+    value: string;
+  }[];
+  /**
+   * Откуда подпись: название описи, раздел и номер строки («… · Бабушкин архив, № 37»).
+   */
+  origin?: string;
   date?: GDate;
   place?: Id;
   private: boolean;

@@ -304,6 +304,30 @@
         "caption": {
           "$ref": "#/$defs/LangText"
         },
+        "details": {
+          "description": "Всё остальное, что известно о снимке (photo_info.py): колонки строки описи 00_ОПИСЬ («Кто», «Где и когда»…), подписи из выгрузки дерева и метки внутри jpg. Значение — Markdown со ссылками [подпись](person:номер).",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "col": {
+                "type": "string",
+                "minLength": 1
+              },
+              "value": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": ["col", "value"],
+            "additionalProperties": false
+          }
+        },
+        "origin": {
+          "description": "Откуда подпись: название описи, раздел и номер строки («… · Бабушкин архив, № 37»).",
+          "type": "string",
+          "minLength": 1
+        },
         "date": {
           "$ref": "#/$defs/Date"
         },

@@ -112,7 +112,8 @@ export function Photos({p, ix}: {p: PersonFile; ix: Lookup}) {
   const inHeader = !p.avatar || p.avatar.private || p.avatar.url === shown[0]?.url
   if (!shown.length || (shown.length < 2 && inHeader)) return null
   // кто где на общем фото: рамки с именами (на сайте только те, кто есть в списке людей)
-  const shots = shown.map(m => ({src: m.url, faces: (m.faces ?? []).flatMap(f => {
+  const shots = shown.map(m => ({src: m.url, caption: m.caption ? <Md text={m.caption[lang] ?? m.caption.ru} /> : undefined,
+    info: m.details?.length || m.origin ? <PhotoAbout m={m} /> : undefined, faces: (m.faces ?? []).flatMap(f => {
     const x = ix.people.get(f.person)
     return x ? [{name: `${nameIn(x.names, lang)}${x.life ? ` ${x.life}` : ''}`, box: f.region, body: f.body}] : []
   })}))
@@ -122,6 +123,20 @@ export function Photos({p, ix}: {p: PersonFile; ix: Lookup}) {
       <a key={m.url} href={m.url} className="pin-host" onClick={e => { e.preventDefault(); lb(shots, i) }}><img loading="lazy" src={m.url} alt="" />
         <PhotoPin photo={{url: m.url, family: true}} where={t('nw_media')} /></a>)}</div>
   </section>
+}
+
+type Media = NonNullable<PersonFile['media']>[number]
+
+/** Всё, что известно о снимке, кроме подписи (photo_info.py): колонки строки описи («Кто», «Где и когда»), подписи из выгрузки
+ *  дерева и метки внутри jpg, откуда подпись. В окне просмотра — под снимком. */
+function PhotoAbout({m}: {m: Media}) {
+  const t = useT()
+  const marks = /[🟢🟡❓]/u.test([m.caption?.ru, ...(m.details ?? []).map(d => d.value)].join(' '))
+  return <>
+    {(m.details ?? []).map((d, k) => <div key={k}><b>{d.col}:</b> <Md text={d.value} /></div>)}
+    {m.origin && <div className="src-line"><b>{t('photo_from')}:</b> {m.origin}</div>}
+    {marks && <div className="src-line">{t('photo_legend')}</div>}
+  </>
 }
 
 /** «Документы» — паспорт, трудовая, метрики (2_transcripts/documents): плитка с первой страницей, нажатие — PDF,

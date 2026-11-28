@@ -452,6 +452,8 @@ gal_source|Источник|Źródło|Fuente|Source
 gal_whose|Чья история|Czyja historia|De quién es la historia|Whose story
 gal_exact|Насколько точно|Na ile pewne|Grado de certeza|How exact
 gal_note|Под вопросом|Wątpliwości|Dudas|Open question
+photo_from|Откуда подпись|Skąd podpis|Origen del pie de foto|Caption from
+photo_legend|🟢 сказано прямо · 🟡 понято из разговора, не наверняка · ❓ не сказано|🟢 powiedziane wprost · 🟡 wynika z rozmowy, niepewne · ❓ nie powiedziano|🟢 dicho directamente · 🟡 deducido de la conversación, no seguro · ❓ no se dijo|🟢 said directly · 🟡 inferred from the conversation, not certain · ❓ not said
 gal_photos_n|{0} фото|{0} zdjęć|{0} fotos|{0} photos
 gal_decade|{0}-е|lata {0}.|años {0}|{0}s
 gal_noyear|Год неизвестен|Rok nieznany|Año desconocido|Year unknown
@@ -1749,6 +1751,20 @@ class SiteExtras(export.Extras):
             import photo_faces
             self._faces = {"/" + u: rows for f, rows in photo_faces.for_site().items() if (u := photo(f))}
         return self._faces.get(url, [])
+
+    def photo_info(self, url):
+        if not hasattr(self, "_info"):  # опись, выгрузка дерева, метки jpg — для снимков из карточек людей (photo_info.py)
+            import photo_info
+            names = {}
+            for x in by_id.values():
+                for m in as_list(x["f"].get("media")):
+                    if (u := photo(m)):
+                        n = N(link_target(m))
+                        names.setdefault("/" + u, (n, media_index.get(n)))
+            got = photo_info.tags([p for _, p in names.values() if p])
+            self._info = {u: photo_info.info(n, p, got.get(Path(N(str(p))), []) if p else [])
+                          for u, (n, p) in names.items()}
+        return self._info.get(url)
 
     # ---------- заметки проекта (data/docs/) ----------
 
