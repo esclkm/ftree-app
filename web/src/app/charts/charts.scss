@@ -21,7 +21,7 @@
   &.me { fill: var(--on-surface); stroke: none; }
   &.me.on { fill: var(--path); }
 }
-.fan-cell.sel path { stroke: var(--on-surface); stroke-width: 3; }
+.fan-cell.sel path { fill: var(--like-bg); stroke: var(--like); stroke-width: 3; }
 .fan-full { fill: none; stroke: var(--like); stroke-width: 2.5; pointer-events: none; }
 .fan-gnum { font-family: var(--f-body); font-size: 12px; fill: var(--muted); }
 .fan-name { fill: var(--on-surface); pointer-events: none; font-weight: 700;
@@ -53,7 +53,8 @@
   font-size: 14px; line-height: 1.35;
 }
 
-.fs-scroll { position: relative; overflow-x: auto; }
+.fs-wrap { position: relative; }
+.fs-scroll { overflow-x: auto; overflow-y: hidden; }
 .fs-svg { display: block; width: 100%; min-width: 620px; height: auto; font-family: var(--f-body); }
 .fs-own { fill: color-mix(in srgb, var(--like) 12%, transparent); }
 .fs-tick { line { stroke: var(--outline); } text { font-size: 12px; font-weight: 700; fill: var(--muted); } }
@@ -143,3 +144,18 @@ main:has(.explore.wide) { max-width: none; }
   .fan-svg { max-width: none; max-height: calc(100vh - 170px); }
   @media (max-width: 1000px) { grid-template-columns: minmax(0, 1fr); } }
 .fan-cell:focus:not(:focus-visible), .depth-wedge:focus:not(:focus-visible), .fs-row:focus:not(:focus-visible) { outline: none; }
+
+// страница человека, широкий экран: половина окна — схема дерева (SideTree.tsx), половина — сама страница.
+// Схема — #FamilyChart, поэтому _tree.scss уже снял ограничение ширины main; отступы возвращаем здесь.
+.side-tree { display: none; }
+@media (min-width: 1400px) {
+  // страница — до своей обычной ширины 1040, дерево — всё остальное: на широком экране справа не остаётся пустоты
+  .split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(560px, 1040px); gap: 16px; align-items: start; padding: 16px 16px 64px; }
+  .split:has(.side-tree.closed) { grid-template-columns: 48px minmax(0, 1040px); justify-content: center; }
+  .side-tree { display: flex; flex-direction: column; position: sticky; top: 64px; height: calc(100vh - 80px); padding: 0; overflow: hidden;
+    #FamilyChart { flex: 1; height: auto; min-height: 0; } }
+  .side-tree.closed { display: block; height: auto; background: none; .btn { padding: 10px; } }
+  .split-main { min-width: 0; }
+}
+.st-head { display: flex; gap: 12px; align-items: baseline; padding: 10px 14px; border-bottom: 1px solid var(--outline);
+  b { display: inline-flex; gap: 6px; align-items: center; } .life { flex: 1; font-size: 13px; } }

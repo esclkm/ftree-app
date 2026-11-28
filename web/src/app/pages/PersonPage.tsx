@@ -16,6 +16,7 @@ import {Homes} from '../Houses'
 import {NoteScope} from '../notes/scope'
 import {Ancestors} from '../charts/Ancestors'
 import {FamilySpan} from '../charts/FamilySpan'
+import {SideTree} from '../charts/SideTree'
 
 export function PersonPage() {
   const href = useLinks()
@@ -65,7 +66,9 @@ function Person({p, ix}: {p: PersonFile; ix: Lookup}) {
     return `${t(k)}: ${ids.map(id => { const x = ix.people.get(id); return x ? nameIn(x.names, 'ru') : id }).join(', ')}`
   }).join('\n')
 
-  return <NoteScope subject={subject}>
+  return <NoteScope subject={subject}><div className="split">
+    <SideTree id={p.id} />
+    <div className="split-main">
     <section className="hero card person-hero">
       <Avatar p={p} ix={ix} />
       <div className="hero-text">
@@ -116,7 +119,7 @@ function Person({p, ix}: {p: PersonFile; ix: Lookup}) {
       <h2><Icon name="source" />{t('src_of')}</h2>
       <ul className="plain">{p.sources.map(id => <li key={id}><SourceLink id={id} ix={ix} /></li>)}</ul>
     </section>}
-  </NoteScope>
+  </div></div></NoteScope>
 }
 
 /** «Возможно, связан» — подозрение из карточки (maybe_same, maybe_kin), не доказанная связь: пунктиром, под семьёй,

@@ -89,7 +89,7 @@ export function FamilySpan({p, ix, onPick, bare}: {p: PersonFile; ix: Lookup; on
   })
 
   const inner = <>
-    <div className="fs-scroll" ref={box}>
+    <div className="fs-wrap" ref={box}><div className="fs-scroll">
       <svg viewBox={`0 0 ${W} ${H}`} className="fs-svg" role="img" aria-label={t('fs_title')}>
         {own.born !== undefined && ownTo !== undefined &&
           <rect className="fs-own" x={x(own.born)} y={0} width={x(ownTo) - x(own.born)} height={rowsH} />}
@@ -98,7 +98,8 @@ export function FamilySpan({p, ix, onPick, bare}: {p: PersonFile; ix: Lookup; on
           <text x={x(y)} y={rowsH + 18} textAnchor="middle">{y}</text>
         </g>)}
         {body}
-      </svg>
+      </svg></div>
+      {/* подсказка — вне прокрутки: внутри она раздвигала блок, появлялась полоса прокрутки и всё прыгало */}
       <Tip tip={tip} width={box.current?.clientWidth} />
     </div>
     <div className="fs-legend">
